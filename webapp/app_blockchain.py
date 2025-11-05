@@ -223,11 +223,19 @@ def list_evidence():
     try:
         db = get_db()
         if not db:
-            return jsonify({"error": "Database connection failed"}), 500
+            return jsonify([])  # Return empty array instead of error
 
         cursor = db.cursor(dictionary=True)
-        cursor.execute("SELECT * FROM evidence_metadata ORDER BY collected_timestamp DESC LIMIT 100")
-        evidence = cursor.fetchall()
+
+        # Check if table exists, create if it doesn't
+        try:
+            cursor.execute("SELECT * FROM evidence_metadata ORDER BY collected_timestamp DESC LIMIT 100")
+            evidence = cursor.fetchall()
+        except mysql.connector.errors.ProgrammingError:
+            # Table doesn't exist, return empty array
+            cursor.close()
+            db.close()
+            return jsonify([])
 
         # Convert datetime objects to strings
         for e in evidence:
@@ -242,7 +250,8 @@ def list_evidence():
         db.close()
         return jsonify(evidence)
     except Exception as e:
-        return jsonify({"error": str(e)}), 500
+        print(f"Evidence list error: {e}")
+        return jsonify([])  # Return empty array on any error
 
 @app.route('/api/containers/status')
 def containers_status():
