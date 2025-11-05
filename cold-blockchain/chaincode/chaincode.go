@@ -1,15 +1,8 @@
 package main
 
 import (
-	"crypto/ecdsa"
-	"crypto/elliptic"
-	"crypto/sha256"
-	"encoding/base64"
-	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"math/big"
-	"strings"
 	"time"
 
 	"github.com/hyperledger/fabric-contract-api-go/contractapi"
