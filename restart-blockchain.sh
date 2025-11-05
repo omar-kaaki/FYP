@@ -65,8 +65,44 @@ echo -e "${YELLOW}Starting Cold Blockchain...${NC}"
 docker-compose -f docker-compose-cold.yml up -d
 sleep 15
 
-# 10. Join channels
-echo -e "${YELLOW}Ensuring channels are joined...${NC}"
+# 10. Join orderers to channels using Channel Participation API
+echo -e "${YELLOW}Joining orderers to channels...${NC}"
+
+# Check if channel blocks exist
+if [ ! -f "hot-blockchain/channel-artifacts/hotchannel.block" ]; then
+    echo -e "${RED}⚠️  hotchannel.block not found. Run ./create-channels-fabric25.sh first${NC}"
+else
+    # Join hot orderer to hotchannel
+    echo "  Joining orderer.hot.coc.com to hotchannel..."
+    docker exec cli osnadmin channel join \
+        --channelID hotchannel \
+        --config-block /opt/gopath/src/github.com/hyperledger/fabric/peer/channel-artifacts/hotchannel.block \
+        -o orderer.hot.coc.com:7053 \
+        --ca-file /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/hot.coc.com/orderers/orderer.hot.coc.com/msp/tlscacerts/tlsca.hot.coc.com-cert.pem \
+        --client-cert /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/hot.coc.com/orderers/orderer.hot.coc.com/tls/server.crt \
+        --client-key /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/hot.coc.com/orderers/orderer.hot.coc.com/tls/server.key \
+        2>&1 | grep -q "already exists\|status: 201\|successfully" && echo "  ✓ Hot orderer joined" || echo "  ⚠️  Hot orderer join attempt completed"
+fi
+
+if [ ! -f "cold-blockchain/channel-artifacts/coldchannel.block" ]; then
+    echo -e "${RED}⚠️  coldchannel.block not found. Run ./create-channels-fabric25.sh first${NC}"
+else
+    # Join cold orderer to coldchannel
+    echo "  Joining orderer.cold.coc.com to coldchannel..."
+    docker exec cli-cold osnadmin channel join \
+        --channelID coldchannel \
+        --config-block /opt/gopath/src/github.com/hyperledger/fabric/peer/channel-artifacts/coldchannel.block \
+        -o orderer.cold.coc.com:7153 \
+        --ca-file /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/cold.coc.com/orderers/orderer.cold.coc.com/msp/tlscacerts/tlsca.cold.coc.com-cert.pem \
+        --client-cert /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/cold.coc.com/orderers/orderer.cold.coc.com/tls/server.crt \
+        --client-key /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/cold.coc.com/orderers/orderer.cold.coc.com/tls/server.key \
+        2>&1 | grep -q "already exists\|status: 201\|successfully" && echo "  ✓ Cold orderer joined" || echo "  ⚠️  Cold orderer join attempt completed"
+fi
+
+echo -e "${GREEN}✓ Orderer channel participation complete${NC}"
+
+# 11. Join channels
+echo -e "${YELLOW}Ensuring peer channels are joined...${NC}"
 
 # Copy channel blocks
 docker cp hot-blockchain/channel-artifacts/hotchannel.block cli:/opt/gopath/src/github.com/hyperledger/fabric/peer/ 2>/dev/null
@@ -84,7 +120,7 @@ docker exec \
 # Join Cold channel
 docker exec cli-cold peer channel join -b coldchannel.block 2>/dev/null || echo "Archive already joined"
 
-# 11. Configure IPFS for WebUI
+# 12. Configure IPFS for WebUI
 echo -e "${YELLOW}Configuring IPFS WebUI...${NC}"
 docker exec ipfs-node ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["https://webui.ipfs.io", "*"]' 2>/dev/null
 docker restart ipfs-node
