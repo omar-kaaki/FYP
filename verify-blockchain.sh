@@ -203,7 +203,7 @@ CREATE_RESULT=$(docker exec cli peer chaincode invoke \
     -n dfir \
     --peerAddresses peer0.lawenforcement.hot.coc.com:7051 \
     --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/lawenforcement.hot.coc.com/peers/peer0.lawenforcement.hot.coc.com/tls/ca.crt \
-    -c "{\"function\":\"CreateEvidence\",\"Args\":[\"$TEST_ID\",\"TEST-CASE-001\",\"test\",\"Verification test evidence\",\"abc123\",\"ipfs://test\",\"verifier\",\"{}\"]}" 2>&1)
+    -c "{\"function\":\"CreateEvidenceSimple\",\"Args\":[\"$TEST_ID\",\"TEST-CASE-001\",\"test\",\"Verification test evidence\",\"abc123\",\"ipfs://test\",\"{}\"]}" 2>&1)
 
 if echo "$CREATE_RESULT" | grep -q "Chaincode invoke successful"; then
     pass_test
@@ -234,7 +234,7 @@ print_test "Querying test evidence from blockchain..."
 QUERY_RESULT=$(docker exec cli peer chaincode query \
     -C hotchannel \
     -n dfir \
-    -c "{\"function\":\"QueryEvidence\",\"Args\":[\"$TEST_ID\"]}" 2>&1)
+    -c "{\"function\":\"ReadEvidenceSimple\",\"Args\":[\"$TEST_ID\"]}" 2>&1)
 
 if echo "$QUERY_RESULT" | grep -q "$TEST_ID"; then
     pass_test
