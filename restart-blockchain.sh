@@ -34,26 +34,38 @@ sleep 5
 echo -e "${YELLOW}Creating shared Docker network...${NC}"
 docker network create coc-network 2>/dev/null || echo "Network already exists"
 
-# 5. Set environment
+# 5. Fix core.yaml files
+echo -e "${YELLOW}Ensuring core.yaml files are in place...${NC}"
+SOURCE_CORE="fabric-samples/test-network/compose/docker/peercfg/core.yaml"
+if [ -f "$SOURCE_CORE" ]; then
+    cp "$SOURCE_CORE" hot-blockchain/crypto-config/peerOrganizations/lawenforcement.hot.coc.com/peers/peer0.lawenforcement.hot.coc.com/ 2>/dev/null
+    cp "$SOURCE_CORE" hot-blockchain/crypto-config/peerOrganizations/forensiclab.hot.coc.com/peers/peer0.forensiclab.hot.coc.com/ 2>/dev/null
+    cp "$SOURCE_CORE" cold-blockchain/crypto-config/peerOrganizations/archive.cold.coc.com/peers/peer0.archive.cold.coc.com/ 2>/dev/null
+    echo "✓ core.yaml files copied"
+else
+    echo "⚠️  Warning: core.yaml not found, peers may fail to start"
+fi
+
+# 6. Set environment
 export PATH="$PWD/fabric-samples/bin:$PATH"
 
-# 6. Start Storage Services (IPFS + MySQL)
+# 7. Start Storage Services (IPFS + MySQL)
 echo -e "${YELLOW}Starting Storage Services...${NC}"
 docker-compose -f docker-compose-storage.yml up -d
 echo "Waiting for services to initialize..."
 sleep 10
 
-# 7. Start Hot Blockchain
+# 8. Start Hot Blockchain
 echo -e "${YELLOW}Starting Hot Blockchain...${NC}"
 docker-compose -f docker-compose-hot.yml up -d
 sleep 15
 
-# 8. Start Cold Blockchain
+# 9. Start Cold Blockchain
 echo -e "${YELLOW}Starting Cold Blockchain...${NC}"
 docker-compose -f docker-compose-cold.yml up -d
 sleep 15
 
-# 9. Join channels
+# 10. Join channels
 echo -e "${YELLOW}Ensuring channels are joined...${NC}"
 
 # Copy channel blocks
@@ -72,7 +84,7 @@ docker exec \
 # Join Cold channel
 docker exec cli-cold peer channel join -b coldchannel.block 2>/dev/null || echo "Archive already joined"
 
-# 10. Configure IPFS for WebUI
+# 11. Configure IPFS for WebUI
 echo -e "${YELLOW}Configuring IPFS WebUI...${NC}"
 docker exec ipfs-node ipfs config --json API.HTTPHeaders.Access-Control-Allow-Origin '["https://webui.ipfs.io", "*"]' 2>/dev/null
 docker restart ipfs-node
