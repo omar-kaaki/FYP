@@ -186,10 +186,11 @@ docker exec cli-cold peer lifecycle chaincode commit \
     --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/archive.cold.coc.com/peers/peer0.archive.cold.coc.com/tls/ca.crt
 check_result "Committed to Cold blockchain"
 
-# Step 10: Initialize chaincode
+# Step 10: Initialize chaincode with PRV configuration
 print_step "Initializing chaincode..."
+echo "Note: Using placeholder PRV config. Update later with real Intel SGX keys."
 
-# Initialize Hot blockchain
+# Initialize Hot blockchain with InitLedger
 echo "Initializing Hot blockchain chaincode..."
 docker exec cli peer chaincode invoke \
     -o orderer.hot.coc.com:7050 \
@@ -200,10 +201,11 @@ docker exec cli peer chaincode invoke \
     --peerAddresses peer0.lawenforcement.hot.coc.com:7051 \
     --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/lawenforcement.hot.coc.com/peers/peer0.lawenforcement.hot.coc.com/tls/ca.crt \
     --isInit \
-    -c '{"function":"Init","Args":[]}'
+    -c '{"function":"InitLedger","Args":["0000000000000000000000000000000000000000000000000000000000000000","0000000000000000000000000000000000000000000000000000000000000000","0000000000000000000000000000000000000000000000000000000000000000"]}' \
+    2>&1
 check_result "Hot blockchain initialized"
 
-# Initialize Cold blockchain
+# Initialize Cold blockchain with InitLedger
 echo "Initializing Cold blockchain chaincode..."
 docker exec cli-cold peer chaincode invoke \
     -o orderer.cold.coc.com:7150 \
@@ -214,7 +216,8 @@ docker exec cli-cold peer chaincode invoke \
     --peerAddresses peer0.archive.cold.coc.com:9051 \
     --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/archive.cold.coc.com/peers/peer0.archive.cold.coc.com/tls/ca.crt \
     --isInit \
-    -c '{"function":"Init","Args":[]}'
+    -c '{"function":"InitLedger","Args":["0000000000000000000000000000000000000000000000000000000000000000","0000000000000000000000000000000000000000000000000000000000000000","0000000000000000000000000000000000000000000000000000000000000000"]}' \
+    2>&1
 check_result "Cold blockchain initialized"
 
 echo ""

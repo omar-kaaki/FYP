@@ -256,11 +256,28 @@ fi
 
 # Test MySQL
 print_test "MySQL database is accessible"
-MYSQL_TEST=$(mysql -h localhost -P 3306 -u cocuser -pcocpassword --ssl-mode=DISABLED -e "SELECT 1" 2>&1)
-if echo "$MYSQL_TEST" | grep -q "1"; then
-    pass_test
+# Check if mysql client is installed on host, otherwise use docker exec
+if command -v mysql &> /dev/null; then
+    MYSQL_TEST=$(mysql -h localhost -P 3306 -u cocuser -pcocpassword --ssl-mode=DISABLED -e "SELECT 1" 2>&1)
+    if echo "$MYSQL_TEST" | grep -q "1"; then
+        pass_test
+    else
+        # Try via docker exec as fallback
+        MYSQL_TEST=$(docker exec mysql-coc mysql -u cocuser -pcocpassword -e "SELECT 1" 2>&1)
+        if echo "$MYSQL_TEST" | grep -q "1"; then
+            pass_test
+        else
+            fail_test
+        fi
+    fi
 else
-    fail_test
+    # No mysql client on host, use docker exec
+    MYSQL_TEST=$(docker exec mysql-coc mysql -u cocuser -pcocpassword -e "SELECT 1" 2>&1)
+    if echo "$MYSQL_TEST" | grep -q "1"; then
+        pass_test
+    else
+        fail_test
+    fi
 fi
 
 # Print Summary
