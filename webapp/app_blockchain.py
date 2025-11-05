@@ -225,6 +225,91 @@ def ipfs_status():
     except Exception as e:
         return jsonify({"status": "offline", "error": str(e)}), 500
 
+@app.route('/api/ipfs/upload', methods=['POST'])
+def ipfs_upload():
+    """Upload file to IPFS"""
+    try:
+        if 'file' not in request.files:
+            return jsonify({"error": "No file provided"}), 400
+
+        file = request.files['file']
+        if file.filename == '':
+            return jsonify({"error": "Empty filename"}), 400
+
+        # Create temporary directory for uploads
+        upload_dir = '/tmp/ipfs-uploads'
+        os.makedirs(upload_dir, exist_ok=True)
+
+        # Save file temporarily
+        temp_path = os.path.join(upload_dir, file.filename)
+        file.save(temp_path)
+
+        try:
+            # Calculate SHA-256 hash of the file
+            sha256_hash = hashlib.sha256()
+            with open(temp_path, 'rb') as f:
+                for chunk in iter(lambda: f.read(4096), b''):
+                    sha256_hash.update(chunk)
+            file_hash = sha256_hash.hexdigest()
+
+            # Copy file to IPFS container
+            copy_result = subprocess.run(
+                ["docker", "cp", temp_path, f"ipfs-node:/tmp/{file.filename}"],
+                capture_output=True,
+                text=True,
+                timeout=30
+            )
+
+            if copy_result.returncode != 0:
+                return jsonify({
+                    "error": f"Failed to copy file to IPFS container: {copy_result.stderr}"
+                }), 500
+
+            # Add file to IPFS
+            ipfs_result = subprocess.run(
+                ["docker", "exec", "ipfs-node", "ipfs", "add", "-Q", f"/tmp/{file.filename}"],
+                capture_output=True,
+                text=True,
+                timeout=60
+            )
+
+            if ipfs_result.returncode == 0:
+                ipfs_hash = ipfs_result.stdout.strip()
+
+                # Clean up temp files
+                try:
+                    os.remove(temp_path)
+                    subprocess.run(
+                        ["docker", "exec", "ipfs-node", "rm", f"/tmp/{file.filename}"],
+                        capture_output=True,
+                        timeout=10
+                    )
+                except:
+                    pass
+
+                return jsonify({
+                    "success": True,
+                    "ipfs_hash": ipfs_hash,
+                    "file_hash": file_hash,
+                    "filename": file.filename,
+                    "gateway_url": f"http://localhost:8080/ipfs/{ipfs_hash}"
+                })
+            else:
+                return jsonify({
+                    "error": f"IPFS add failed: {ipfs_result.stderr}"
+                }), 500
+
+        finally:
+            # Clean up temp file if still exists
+            if os.path.exists(temp_path):
+                try:
+                    os.remove(temp_path)
+                except:
+                    pass
+
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/health')
 def health():
     """Health check endpoint"""
@@ -235,17 +320,38 @@ def health():
     })
 
 if __name__ == '__main__':
-    print("=" * 50)
-    print("DFIR Blockchain Dashboard")
-    print("=" * 50)
-    print("Starting Flask server on http://0.0.0.0:5000")
     print()
-    print("Endpoints:")
-    print("  Dashboard:  http://localhost:5000")
-    print("  Health:     http://localhost:5000/health")
-    print("  API Docs:   http://localhost:5000/api/*")
+    print("=" * 70)
+    print("       DFIR BLOCKCHAIN EVIDENCE MANAGEMENT SYSTEM")
+    print("=" * 70)
     print()
-    print("Press Ctrl+C to stop")
-    print("=" * 50)
+    print("📍 SERVICE URLS:")
+    print()
+    print("  🌐 Main Dashboard:        http://localhost:5000")
+    print("  📁 IPFS Web UI:           https://webui.ipfs.io")
+    print("  🔗 IPFS Gateway:          http://localhost:8080")
+    print("  🗄️  MySQL phpMyAdmin:      http://localhost:8081")
+    print()
+    print("  Credentials for phpMyAdmin:")
+    print("    Username: cocuser")
+    print("    Password: cocpassword")
+    print("    Database: coc_evidence")
+    print()
+    print("=" * 70)
+    print()
+    print("🔧 API ENDPOINTS:")
+    print()
+    print("  GET  /api/blockchain/status    - Blockchain health status")
+    print("  POST /api/evidence/create      - Create new evidence")
+    print("  GET  /api/evidence/<id>        - Query evidence by ID")
+    print("  GET  /api/evidence/list        - List all evidence")
+    print("  POST /api/ipfs/upload          - Upload file to IPFS")
+    print("  GET  /api/ipfs/status          - IPFS node status")
+    print("  GET  /api/containers/status    - Docker containers status")
+    print()
+    print("=" * 70)
+    print()
+    print("✅ System Ready - Press Ctrl+C to stop")
+    print()
 
     app.run(host='0.0.0.0', port=5000, debug=True)

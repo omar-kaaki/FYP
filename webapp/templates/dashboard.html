@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DFIR Blockchain Dashboard</title>
+    <title>DFIR Blockchain - Evidence Management System</title>
     <style>
         * {
             margin: 0;
@@ -13,375 +13,844 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            background: #f5f5f5;
             color: #333;
-            min-height: 100vh;
-            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .header {
+            background: #ffffff;
+            border-bottom: 2px solid #e0e0e0;
+            padding: 20px 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo h1 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: #3498db;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .status-bar {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+        }
+
+        .status-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #27ae60;
+        }
+
+        .status-dot.offline {
+            background: #e74c3c;
         }
 
         .container {
             max-width: 1400px;
             margin: 0 auto;
-        }
-
-        header {
-            background: white;
-            border-radius: 10px;
-            padding: 30px;
-            margin-bottom: 30px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-
-        h1 {
-            color: #667eea;
-            font-size: 32px;
-            margin-bottom: 10px;
-        }
-
-        .subtitle {
-            color: #666;
-            font-size: 16px;
+            padding: 30px 20px;
         }
 
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
             gap: 20px;
             margin-bottom: 30px;
         }
 
         .card {
             background: white;
-            border-radius: 10px;
-            padding: 25px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            transition: transform 0.2s;
-        }
-
-        .card:hover {
-            transform: translateY(-5px);
+            border-radius: 8px;
+            padding: 24px;
+            border: 1px solid #e0e0e0;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
 
         .card h2 {
-            color: #667eea;
-            font-size: 20px;
-            margin-bottom: 15px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
+            font-size: 18px;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e0e0e0;
         }
 
-        .status-indicator {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            display: inline-block;
+        .upload-area {
+            border: 2px dashed #bdc3c7;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 16px 0;
         }
 
-        .status-running {
-            background-color: #10b981;
-            animation: pulse 2s infinite;
+        .upload-area:hover {
+            border-color: #3498db;
+            background: #f8f9fa;
         }
 
-        .status-error {
-            background-color: #ef4444;
+        .upload-area.dragover {
+            border-color: #3498db;
+            background: #e3f2fd;
         }
 
-        @keyframes pulse {
-            0%, 100% {
-                opacity: 1;
-            }
-            50% {
-                opacity: 0.5;
-            }
+        .upload-icon {
+            font-size: 48px;
+            color: #95a5a6;
+            margin-bottom: 12px;
         }
 
         .btn {
-            background: #667eea;
+            background: #3498db;
             color: white;
             border: none;
-            padding: 12px 24px;
+            padding: 10px 20px;
             border-radius: 6px;
             cursor: pointer;
             font-size: 14px;
+            font-weight: 500;
             transition: background 0.2s;
-            margin-right: 10px;
-            margin-top: 10px;
+            display: inline-block;
+            text-decoration: none;
         }
 
         .btn:hover {
-            background: #5568d3;
+            background: #2980b9;
         }
 
         .btn-secondary {
-            background: #6b7280;
+            background: #95a5a6;
         }
 
         .btn-secondary:hover {
-            background: #4b5563;
+            background: #7f8c8d;
+        }
+
+        .btn-success {
+            background: #27ae60;
+        }
+
+        .btn-success:hover {
+            background: #229954;
+        }
+
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-group label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: #2c3e50;
+            margin-bottom: 6px;
+        }
+
+        .form-group input,
+        .form-group textarea,
+        .form-group select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 1px solid #d0d0d0;
+            border-radius: 6px;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #3498db;
         }
 
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-top: 15px;
+            margin-top: 16px;
         }
 
         th, td {
             padding: 12px;
             text-align: left;
-            border-bottom: 1px solid #e5e7eb;
+            border-bottom: 1px solid #e0e0e0;
+            font-size: 14px;
         }
 
         th {
-            background-color: #f9fafb;
+            background: #f8f9fa;
             font-weight: 600;
-            color: #667eea;
+            color: #2c3e50;
         }
 
         tr:hover {
-            background-color: #f9fafb;
+            background: #f8f9fa;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+
+        .alert {
+            padding: 12px 16px;
+            border-radius: 6px;
+            margin: 12px 0;
+            font-size: 14px;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
         }
 
         .loading {
             text-align: center;
             padding: 20px;
-            color: #666;
+            color: #95a5a6;
         }
 
-        .error {
-            background-color: #fee2e2;
-            color: #991b1b;
-            padding: 12px;
-            border-radius: 6px;
-            margin-top: 10px;
+        .stat-card {
+            text-align: center;
+            padding: 20px;
         }
 
-        .success {
-            background-color: #d1fae5;
-            color: #065f46;
+        .stat-number {
+            font-size: 36px;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 8px;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #7f8c8d;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .ipfs-file-list {
+            max-height: 300px;
+            overflow-y: auto;
+        }
+
+        .ipfs-file-item {
+            padding: 10px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .ipfs-file-item:hover {
+            background: #f8f9fa;
+        }
+
+        .file-info {
+            flex: 1;
+        }
+
+        .file-name {
+            font-weight: 500;
+            color: #2c3e50;
+        }
+
+        .file-cid {
+            font-size: 12px;
+            color: #95a5a6;
+            font-family: monospace;
+        }
+
+        .blockchain-info {
+            background: #f8f9fa;
             padding: 12px;
             border-radius: 6px;
-            margin-top: 10px;
+            margin-top: 12px;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 4px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        .tab {
+            padding: 12px 24px;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 14px;
+            font-weight: 500;
+            color: #7f8c8d;
+            transition: all 0.2s;
+        }
+
+        .tab.active {
+            color: #3498db;
+            border-bottom: 2px solid #3498db;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
         }
 
         pre {
-            background: #f9fafb;
-            padding: 15px;
+            background: #f8f9fa;
+            padding: 12px;
             border-radius: 6px;
             overflow-x: auto;
             font-size: 12px;
-            line-height: 1.5;
+            border: 1px solid #e0e0e0;
         }
 
-        .icon {
-            font-size: 24px;
+        #uploadedFile {
+            margin-top: 12px;
+            padding: 10px;
+            background: #e8f5e9;
+            border: 1px solid #c8e6c9;
+            border-radius: 6px;
+            font-size: 14px;
         }
     </style>
 </head>
 <body>
+    <div class="header">
+        <div class="header-content">
+            <div class="logo">
+                <div class="logo-icon">DF</div>
+                <div>
+                    <h1>DFIR Blockchain System</h1>
+                    <div style="font-size: 12px; color: #7f8c8d;">Digital Forensics & Incident Response - Chain of Custody</div>
+                </div>
+            </div>
+            <div class="status-bar">
+                <div class="status-item">
+                    <div class="status-dot" id="hot-status-dot"></div>
+                    <span>Hot Chain</span>
+                </div>
+                <div class="status-item">
+                    <div class="status-dot" id="cold-status-dot"></div>
+                    <span>Cold Chain</span>
+                </div>
+                <div class="status-item">
+                    <div class="status-dot" id="ipfs-status-dot"></div>
+                    <span>IPFS</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="container">
-        <header>
-            <h1>🔗 DFIR Blockchain Dashboard</h1>
-            <p class="subtitle">Dual Hyperledger Fabric Blockchain for Chain of Custody Evidence Management</p>
-        </header>
-
+        <!-- Stats Row -->
         <div class="grid">
-            <div class="card">
-                <h2>
-                    <span class="status-indicator status-running" id="hot-status"></span>
-                    🔥 Hot Blockchain
-                </h2>
-                <p>Law Enforcement & Forensic Lab</p>
-                <div id="hot-info" class="loading">Loading...</div>
-                <button class="btn" onclick="queryEvidence('hot')">Query Evidence</button>
-                <button class="btn btn-secondary" onclick="showChannelInfo('hot')">Channel Info</button>
+            <div class="card stat-card">
+                <div class="stat-number" id="hot-height">-</div>
+                <div class="stat-label">Hot Chain Height</div>
+            </div>
+            <div class="card stat-card">
+                <div class="stat-number" id="cold-height">-</div>
+                <div class="stat-label">Cold Chain Height</div>
+            </div>
+            <div class="card stat-card">
+                <div class="stat-number" id="container-count">-</div>
+                <div class="stat-label">Running Containers</div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="grid">
+            <!-- Evidence Upload Section -->
+            <div class="card" style="grid-column: span 2;">
+                <h2>📤 Upload Evidence to Blockchain</h2>
+
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📁</div>
+                    <div style="font-size: 16px; font-weight: 500; color: #2c3e50; margin-bottom: 8px;">
+                        Drag & Drop Evidence File or Click to Browse
+                    </div>
+                    <div style="font-size: 14px; color: #95a5a6;">
+                        Supported formats: All file types • Max size: 100MB
+                    </div>
+                    <input type="file" id="fileInput" style="display: none;">
+                </div>
+
+                <div id="uploadedFile" style="display: none;"></div>
+
+                <form id="evidenceForm">
+                    <div class="form-group">
+                        <label>Evidence ID *</label>
+                        <input type="text" id="evidenceId" placeholder="E.g., EVD-2025-001" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Case ID *</label>
+                        <input type="text" id="caseId" placeholder="E.g., CASE-2025-001" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Evidence Type *</label>
+                        <select id="evidenceType" required>
+                            <option value="">Select type...</option>
+                            <option value="digital">Digital Evidence</option>
+                            <option value="document">Document</option>
+                            <option value="image">Image/Photo</option>
+                            <option value="video">Video</option>
+                            <option value="audio">Audio</option>
+                            <option value="physical">Physical Evidence (Photo)</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Description *</label>
+                        <textarea id="description" rows="3" placeholder="Detailed description of the evidence..." required></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Collected By *</label>
+                        <input type="text" id="collectedBy" placeholder="Officer name or ID" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label>Blockchain Target</label>
+                        <select id="blockchain">
+                            <option value="hot">Hot Blockchain (Investigative)</option>
+                            <option value="cold">Cold Blockchain (Archive)</option>
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-success" style="width: 100%; padding: 14px; font-size: 16px;">
+                        🔒 Submit Evidence to Blockchain
+                    </button>
+                </form>
+
+                <div id="uploadResult"></div>
             </div>
 
-            <div class="card">
-                <h2>
-                    <span class="status-indicator status-running" id="cold-status"></span>
-                    ❄️ Cold Blockchain
-                </h2>
-                <p>Immutable Archive Storage</p>
-                <div id="cold-info" class="loading">Loading...</div>
-                <button class="btn" onclick="queryEvidence('cold')">Query Evidence</button>
-                <button class="btn btn-secondary" onclick="showChannelInfo('cold')">Channel Info</button>
-            </div>
-
+            <!-- IPFS Files Section -->
             <div class="card">
                 <h2>📦 IPFS Storage</h2>
-                <p>Distributed File System</p>
-                <div id="ipfs-info" class="loading">Loading...</div>
-                <button class="btn" onclick="openIPFS()">Open WebUI</button>
+                <div id="ipfs-info" class="loading">Checking IPFS status...</div>
+                <button class="btn" onclick="window.open('https://webui.ipfs.io', '_blank')" style="margin-top: 12px;">
+                    Open IPFS WebUI
+                </button>
+                <div id="ipfs-files" class="ipfs-file-list" style="margin-top: 16px;"></div>
             </div>
         </div>
 
+        <!-- Evidence List -->
         <div class="card">
-            <h2>🐳 Docker Containers</h2>
-            <div id="containers-list" class="loading">Loading...</div>
+            <h2>📋 Evidence Records</h2>
+            <div class="tabs">
+                <button class="tab active" onclick="switchTab('recent')">Recent Evidence</button>
+                <button class="tab" onclick="switchTab('search')">Search Evidence</button>
+            </div>
+
+            <div id="recent-tab" class="tab-content active">
+                <div id="evidence-list" class="loading">Loading evidence...</div>
+            </div>
+
+            <div id="search-tab" class="tab-content">
+                <div class="form-group">
+                    <input type="text" id="searchId" placeholder="Enter Evidence ID to search...">
+                </div>
+                <button class="btn" onclick="searchEvidence()">Search</button>
+                <div id="search-result"></div>
+            </div>
         </div>
 
+        <!-- Blockchain Status -->
+        <div class="grid">
+            <div class="card">
+                <h2>🔥 Hot Blockchain Status</h2>
+                <div id="hot-blockchain-info" class="blockchain-info">Loading...</div>
+            </div>
+            <div class="card">
+                <h2>❄️ Cold Blockchain Status</h2>
+                <div id="cold-blockchain-info" class="blockchain-info">Loading...</div>
+            </div>
+        </div>
+
+        <!-- Containers -->
         <div class="card">
-            <h2>📊 Test Evidence Transaction</h2>
-            <button class="btn" onclick="createTestEvidence()">Create Test Evidence</button>
-            <button class="btn btn-secondary" onclick="queryTestEvidence()">Query Test Evidence</button>
-            <div id="test-result"></div>
+            <h2>🐳 System Containers</h2>
+            <div id="containers-list" class="loading">Loading containers...</div>
         </div>
     </div>
 
     <script>
-        // Load blockchain status
-        async function loadBlockchainStatus() {
-            try {
-                const response = await fetch('/api/blockchain/status');
-                const data = await response.json();
+        let selectedFile = null;
+        let uploadedIPFSHash = null;
 
-                // Hot blockchain
-                const hotStatus = document.getElementById('hot-status');
-                const hotInfo = document.getElementById('hot-info');
-                if (data.hot_blockchain.status === 'running') {
-                    hotStatus.className = 'status-indicator status-running';
-                    hotInfo.innerHTML = `<pre>${data.hot_blockchain.info}</pre>`;
-                } else {
-                    hotStatus.className = 'status-indicator status-error';
-                    hotInfo.innerHTML = `<div class="error">${data.hot_blockchain.info}</div>`;
-                }
+        // File upload handling
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
 
-                // Cold blockchain
-                const coldStatus = document.getElementById('cold-status');
-                const coldInfo = document.getElementById('cold-info');
-                if (data.cold_blockchain.status === 'running') {
-                    coldStatus.className = 'status-indicator status-running';
-                    coldInfo.innerHTML = `<pre>${data.cold_blockchain.info}</pre>`;
-                } else {
-                    coldStatus.className = 'status-indicator status-error';
-                    coldInfo.innerHTML = `<div class="error">${data.cold_blockchain.info}</div>`;
-                }
-            } catch (error) {
-                console.error('Error loading blockchain status:', error);
+        uploadArea.addEventListener('click', () => fileInput.click());
+
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                handleFile(e.dataTransfer.files[0]);
             }
-        }
+        });
 
-        // Load containers status
-        async function loadContainers() {
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        async function handleFile(file) {
+            selectedFile = file;
+            document.getElementById('uploadedFile').style.display = 'block';
+            document.getElementById('uploadedFile').innerHTML = `
+                <strong>Selected:</strong> ${file.name} (${(file.size / 1024 / 1024).toFixed(2)} MB)<br>
+                <span style="color: #95a5a6; font-size: 12px;">Uploading to IPFS...</span>
+            `;
+
+            // Upload to IPFS
+            const formData = new FormData();
+            formData.append('file', file);
+
             try {
-                const response = await fetch('/api/containers/status');
-                const containers = await response.json();
-
-                let html = '<table><thead><tr><th>Container</th><th>Status</th></tr></thead><tbody>';
-                containers.forEach(c => {
-                    html += `<tr><td>${c.name}</td><td>${c.status}</td></tr>`;
+                const response = await fetch('/api/ipfs/upload', {
+                    method: 'POST',
+                    body: formData
                 });
-                html += '</tbody></table>';
 
-                document.getElementById('containers-list').innerHTML = html;
-            } catch (error) {
-                document.getElementById('containers-list').innerHTML = `<div class="error">Error: ${error.message}</div>`;
-            }
-        }
-
-        // Load IPFS status
-        async function loadIPFSStatus() {
-            try {
-                const response = await fetch('/api/ipfs/status');
                 const data = await response.json();
 
-                if (data.status === 'running') {
-                    document.getElementById('ipfs-info').innerHTML = `<div class="success">✓ IPFS Running<br>Version: ${data.version.Version}</div>`;
+                if (data.success) {
+                    uploadedIPFSHash = data.ipfs_hash;
+                    document.getElementById('uploadedFile').innerHTML = `
+                        <strong>✓ File uploaded to IPFS</strong><br>
+                        <strong>Hash:</strong> <code>${data.ipfs_hash}</code><br>
+                        <strong>Size:</strong> ${(file.size / 1024 / 1024).toFixed(2)} MB<br>
+                        <a href="http://localhost:8080/ipfs/${data.ipfs_hash}" target="_blank" class="btn btn-secondary" style="margin-top: 8px; font-size: 12px;">View on IPFS Gateway</a>
+                    `;
                 } else {
-                    document.getElementById('ipfs-info').innerHTML = `<div class="error">✗ IPFS Offline</div>`;
+                    document.getElementById('uploadedFile').innerHTML = `
+                        <span style="color: #e74c3c;">Error uploading to IPFS: ${data.error}</span>
+                    `;
                 }
             } catch (error) {
-                document.getElementById('ipfs-info').innerHTML = `<div class="error">Error: ${error.message}</div>`;
+                document.getElementById('uploadedFile').innerHTML = `
+                    <span style="color: #e74c3c;">Error: ${error.message}</span>
+                `;
             }
         }
 
-        // Create test evidence
-        async function createTestEvidence() {
-            const testId = 'TEST-' + Date.now();
-            const resultDiv = document.getElementById('test-result');
-            resultDiv.innerHTML = '<div class="loading">Creating evidence...</div>';
+        // Evidence form submission
+        document.getElementById('evidenceForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            if (!uploadedIPFSHash) {
+                alert('Please upload a file first');
+                return;
+            }
+
+            const resultDiv = document.getElementById('uploadResult');
+            resultDiv.innerHTML = '<div class="alert alert-info">Submitting evidence to blockchain...</div>';
+
+            // Calculate file hash (in production, use proper crypto hash)
+            const fileHash = 'sha256:' + await calculateHash(selectedFile);
+
+            const evidenceData = {
+                id: document.getElementById('evidenceId').value,
+                case_id: document.getElementById('caseId').value,
+                type: document.getElementById('evidenceType').value,
+                description: document.getElementById('description').value,
+                hash: fileHash,
+                location: `ipfs://${uploadedIPFSHash}`,
+                metadata: JSON.stringify({
+                    collected_by: document.getElementById('collectedBy').value,
+                    filename: selectedFile.name,
+                    filesize: selectedFile.size,
+                    timestamp: new Date().toISOString()
+                })
+            };
 
             try {
                 const response = await fetch('/api/evidence/create', {
                     method: 'POST',
                     headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({
-                        id: testId,
-                        case_id: 'CASE-' + Date.now(),
-                        type: 'digital',
-                        description: 'Test evidence from dashboard',
-                        hash: 'sha256:' + Math.random().toString(36).substring(2),
-                        location: 'ipfs://test',
-                        metadata: JSON.stringify({source: 'dashboard'})
-                    })
+                    body: JSON.stringify(evidenceData)
                 });
 
                 const data = await response.json();
+
                 if (data.success) {
-                    resultDiv.innerHTML = `<div class="success">✓ Evidence created: ${testId}</div>`;
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-success">
+                            <strong>✓ Evidence successfully recorded on blockchain!</strong><br>
+                            Evidence ID: ${evidenceData.id}<br>
+                            IPFS Hash: ${uploadedIPFSHash}<br>
+                            File Hash: ${fileHash}
+                        </div>
+                    `;
+                    document.getElementById('evidenceForm').reset();
+                    document.getElementById('uploadedFile').style.display = 'none';
+                    selectedFile = null;
+                    uploadedIPFSHash = null;
+                    loadEvidenceList();
                 } else {
-                    resultDiv.innerHTML = `<div class="error">✗ Error: ${data.error}</div>`;
+                    resultDiv.innerHTML = `<div class="alert alert-error">Error: ${data.error}</div>`;
                 }
             } catch (error) {
-                resultDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+                resultDiv.innerHTML = `<div class="alert alert-error">Error: ${error.message}</div>`;
+            }
+        });
+
+        async function calculateHash(file) {
+            const buffer = await file.arrayBuffer();
+            const hashBuffer = await crypto.subtle.digest('SHA-256', buffer);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        function switchTab(tab) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById(tab + '-tab').classList.add('active');
+        }
+
+        async function loadBlockchainStatus() {
+            try {
+                const response = await fetch('/api/blockchain/status');
+                const data = await response.json();
+
+                // Update status dots
+                document.getElementById('hot-status-dot').className =
+                    data.hot_blockchain.status === 'running' ? 'status-dot' : 'status-dot offline';
+                document.getElementById('cold-status-dot').className =
+                    data.cold_blockchain.status === 'running' ? 'status-dot' : 'status-dot offline';
+
+                // Update blockchain info
+                document.getElementById('hot-blockchain-info').textContent = data.hot_blockchain.info;
+                document.getElementById('cold-blockchain-info').textContent = data.cold_blockchain.info;
+
+                // Extract heights
+                const hotMatch = data.hot_blockchain.info.match(/"height":(\d+)/);
+                const coldMatch = data.cold_blockchain.info.match(/"height":(\d+)/);
+
+                if (hotMatch) document.getElementById('hot-height').textContent = hotMatch[1];
+                if (coldMatch) document.getElementById('cold-height').textContent = coldMatch[1];
+            } catch (error) {
+                console.error('Error loading blockchain status:', error);
             }
         }
 
-        // Query test evidence
-        async function queryTestEvidence() {
-            const testId = prompt('Enter evidence ID to query:');
-            if (!testId) return;
+        async function loadContainers() {
+            try {
+                const response = await fetch('/api/containers/status');
+                const containers = await response.json();
 
-            const resultDiv = document.getElementById('test-result');
-            resultDiv.innerHTML = '<div class="loading">Querying evidence...</div>';
+                document.getElementById('container-count').textContent = containers.length;
+
+                let html = '<table><thead><tr><th>Container</th><th>Status</th></tr></thead><tbody>';
+                containers.forEach(c => {
+                    const statusClass = c.status.includes('Up') ? 'badge-success' : 'badge-warning';
+                    html += `<tr>
+                        <td>${c.name}</td>
+                        <td><span class="badge ${statusClass}">${c.status}</span></td>
+                    </tr>`;
+                });
+                html += '</tbody></table>';
+
+                document.getElementById('containers-list').innerHTML = html;
+            } catch (error) {
+                document.getElementById('containers-list').innerHTML =
+                    `<div class="alert alert-error">Error: ${error.message}</div>`;
+            }
+        }
+
+        async function loadIPFSStatus() {
+            try {
+                const response = await fetch('/api/ipfs/status');
+                const data = await response.json();
+
+                document.getElementById('ipfs-status-dot').className =
+                    data.status === 'running' ? 'status-dot' : 'status-dot offline';
+
+                if (data.status === 'running') {
+                    document.getElementById('ipfs-info').innerHTML = `
+                        <div class="alert alert-success">✓ IPFS Node Running</div>
+                        <div style="font-size: 12px; color: #7f8c8d; margin-top: 8px;">
+                            Version: ${data.Version || 'Unknown'}
+                        </div>
+                    `;
+                } else {
+                    document.getElementById('ipfs-info').innerHTML =
+                        `<div class="alert alert-error">✗ IPFS Offline</div>`;
+                }
+            } catch (error) {
+                document.getElementById('ipfs-info').innerHTML =
+                    `<div class="alert alert-error">Error: ${error.message}</div>`;
+            }
+        }
+
+        async function loadEvidenceList() {
+            try {
+                const response = await fetch('/api/evidence/list');
+                const evidence = await response.json();
+
+                if (evidence.length === 0) {
+                    document.getElementById('evidence-list').innerHTML =
+                        '<div class="alert alert-info">No evidence records found</div>';
+                    return;
+                }
+
+                let html = '<table><thead><tr><th>ID</th><th>Case</th><th>Type</th><th>Description</th><th>Timestamp</th></tr></thead><tbody>';
+                evidence.slice(0, 10).forEach(e => {
+                    html += `<tr>
+                        <td><strong>${e.evidence_id || e.id}</strong></td>
+                        <td>${e.case_id}</td>
+                        <td><span class="badge badge-info">${e.evidence_type || e.type}</span></td>
+                        <td>${e.description}</td>
+                        <td>${new Date(e.collected_timestamp || e.created_at).toLocaleString()}</td>
+                    </tr>`;
+                });
+                html += '</tbody></table>';
+
+                document.getElementById('evidence-list').innerHTML = html;
+            } catch (error) {
+                document.getElementById('evidence-list').innerHTML =
+                    `<div class="alert alert-error">Error: ${error.message}</div>`;
+            }
+        }
+
+        async function searchEvidence() {
+            const id = document.getElementById('searchId').value;
+            if (!id) return;
+
+            const resultDiv = document.getElementById('search-result');
+            resultDiv.innerHTML = '<div class="loading">Searching blockchain...</div>';
 
             try {
-                const response = await fetch(`/api/evidence/${testId}`);
+                const response = await fetch(`/api/evidence/${id}`);
                 const data = await response.json();
 
                 if (response.ok) {
-                    resultDiv.innerHTML = `<div class="success">✓ Evidence found</div><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                    resultDiv.innerHTML = `
+                        <div class="alert alert-success" style="margin-top: 16px;">
+                            <strong>✓ Evidence Found</strong>
+                        </div>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
                 } else {
-                    resultDiv.innerHTML = `<div class="error">✗ Evidence not found</div>`;
+                    resultDiv.innerHTML =
+                        `<div class="alert alert-error" style="margin-top: 16px;">Evidence not found</div>`;
                 }
             } catch (error) {
-                resultDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+                resultDiv.innerHTML =
+                    `<div class="alert alert-error" style="margin-top: 16px;">Error: ${error.message}</div>`;
             }
         }
 
-        // Open IPFS WebUI
-        function openIPFS() {
-            window.open('https://webui.ipfs.io/#/files', '_blank');
-        }
-
-        // Query evidence
-        function queryEvidence(blockchain) {
-            const id = prompt(`Enter evidence ID to query from ${blockchain} blockchain:`);
-            if (id) {
-                queryTestEvidence();
-            }
-        }
-
-        // Show channel info
-        function showChannelInfo(blockchain) {
-            alert(`Channel info for ${blockchain} blockchain will be displayed`);
-        }
-
-        // Load all data on page load
-        window.onload = () => {
+        // Auto-refresh
+        function refreshData() {
             loadBlockchainStatus();
             loadContainers();
             loadIPFSStatus();
+            loadEvidenceList();
+        }
 
-            // Refresh every 10 seconds
-            setInterval(() => {
-                loadBlockchainStatus();
-                loadContainers();
-                loadIPFSStatus();
-            }, 10000);
-        };
+        // Initial load
+        refreshData();
+
+        // Refresh every 10 seconds
+        setInterval(refreshData, 10000);
     </script>
 </body>
 </html>
