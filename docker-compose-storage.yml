@@ -48,7 +48,7 @@ services:
       - storage-network
       - coc-network
     restart: unless-stopped
-    command: --default-authentication-plugin=mysql_native_password --ssl-mode=DISABLED
+    command: --default-authentication-plugin=mysql_native_password --skip-ssl
 
   # phpMyAdmin - Database Management UI
   phpmyadmin:
