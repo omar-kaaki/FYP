@@ -509,9 +509,17 @@
             <div class="card">
                 <h2>📦 IPFS Storage</h2>
                 <div id="ipfs-info" class="loading">Checking IPFS status...</div>
-                <button class="btn" onclick="window.open('https://webui.ipfs.io', '_blank')" style="margin-top: 12px;">
-                    Open IPFS WebUI
-                </button>
+                <div style="margin-top: 16px; padding: 12px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid #3498db;">
+                    <div style="font-size: 13px; color: #2c3e50; margin-bottom: 8px;">
+                        <strong>Access IPFS Web Interface:</strong>
+                    </div>
+                    <button class="btn" onclick="window.open('https://webui.ipfs.io', '_blank')" style="width: 100%; margin-bottom: 8px;">
+                        🌐 Open IPFS WebUI Interface
+                    </button>
+                    <div style="font-size: 11px; color: #7f8c8d; line-height: 1.4;">
+                        Opens the IPFS Web Interface in a new tab. Once opened, configure it to connect to your local IPFS node at: <code style="background: #ecf0f1; padding: 2px 6px; border-radius: 3px;">http://localhost:5001</code>
+                    </div>
+                </div>
                 <div id="ipfs-files" class="ipfs-file-list" style="margin-top: 16px;"></div>
             </div>
         </div>
@@ -542,10 +550,22 @@
             <div class="card">
                 <h2>🔥 Hot Blockchain Status</h2>
                 <div id="hot-blockchain-info" class="blockchain-info">Loading...</div>
+                <button class="btn" onclick="window.open('http://localhost:8090', '_blank')" style="margin-top: 12px; width: 100%;">
+                    🔍 Open Hot Chain Explorer
+                </button>
+                <div style="font-size: 11px; color: #7f8c8d; margin-top: 8px; text-align: center;">
+                    Default credentials: exploreradmin / exploreradminpw
+                </div>
             </div>
             <div class="card">
                 <h2>❄️ Cold Blockchain Status</h2>
                 <div id="cold-blockchain-info" class="blockchain-info">Loading...</div>
+                <button class="btn" onclick="window.open('http://localhost:8091', '_blank')" style="margin-top: 12px; width: 100%;">
+                    🔍 Open Cold Chain Explorer
+                </button>
+                <div style="font-size: 11px; color: #7f8c8d; margin-top: 8px; text-align: center;">
+                    Default credentials: exploreradmin / exploreradminpw
+                </div>
             </div>
         </div>
 
@@ -615,7 +635,7 @@
                         <strong>✓ File uploaded to IPFS</strong><br>
                         <strong>Hash:</strong> <code>${data.ipfs_hash}</code><br>
                         <strong>Size:</strong> ${(file.size / 1024 / 1024).toFixed(2)} MB<br>
-                        <a href="http://localhost:8080/ipfs/${data.ipfs_hash}" target="_blank" class="btn btn-secondary" style="margin-top: 8px; font-size: 12px;">View on IPFS Gateway</a>
+                        <a href="http://localhost:8080/ipfs/${data.ipfs_hash}" target="_blank" class="btn btn-secondary" style="margin-top: 8px; font-size: 12px;">📄 Download/View File</a>
                     `;
                 } else {
                     document.getElementById('uploadedFile').innerHTML = `

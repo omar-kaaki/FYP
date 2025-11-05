@@ -39,8 +39,8 @@ def get_db():
 def exec_chaincode(command_type, channel, chaincode, function, args):
     """Execute chaincode command via CLI container"""
     cli_container = "cli" if channel == "hotchannel" else "cli-cold"
-    peer_address = HOT_PEER if channel == "hotchannel" else COLD_PEER
 
+    # Base command
     cmd = [
         "docker", "exec", cli_container,
         "peer", "chaincode", command_type,
@@ -49,12 +49,35 @@ def exec_chaincode(command_type, channel, chaincode, function, args):
         "-c", json.dumps({"function": function, "Args": args})
     ]
 
+    # Add TLS and peer parameters for invoke operations
+    if command_type == "invoke":
+        if channel == "hotchannel":
+            cmd.extend([
+                "--waitForEvent",
+                "--tls",
+                "--cafile", "/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/hot.coc.com/orderers/orderer.hot.coc.com/msp/tlscacerts/tlsca.hot.coc.com-cert.pem",
+                "--peerAddresses", "peer0.lawenforcement.hot.coc.com:7051",
+                "--tlsRootCertFiles", "/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/lawenforcement.hot.coc.com/peers/peer0.lawenforcement.hot.coc.com/tls/ca.crt",
+                "--peerAddresses", "peer0.forensiclab.hot.coc.com:8051",
+                "--tlsRootCertFiles", "/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/forensiclab.hot.coc.com/peers/peer0.forensiclab.hot.coc.com/tls/ca.crt"
+            ])
+        else:  # coldchannel
+            cmd.extend([
+                "--waitForEvent",
+                "--tls",
+                "--cafile", "/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/cold.coc.com/orderers/orderer.cold.coc.com/msp/tlscacerts/tlsca.cold.coc.com-cert.pem",
+                "--peerAddresses", "peer0.archive.cold.coc.com:9051",
+                "--tlsRootCertFiles", "/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/archive.cold.coc.com/peers/peer0.archive.cold.coc.com/tls/ca.crt"
+            ])
+
     try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=45)
         if result.returncode == 0:
             return {"success": True, "data": result.stdout}
         else:
             return {"success": False, "error": result.stderr}
+    except subprocess.TimeoutExpired:
+        return {"success": False, "error": "Transaction timeout - orderer may not be responding"}
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -321,23 +344,24 @@ def health():
 
 if __name__ == '__main__':
     print()
-    print("=" * 70)
+    print("=" * 75)
     print("       DFIR BLOCKCHAIN EVIDENCE MANAGEMENT SYSTEM")
-    print("=" * 70)
+    print("=" * 75)
     print()
     print("📍 SERVICE URLS:")
     print()
-    print("  🌐 Main Dashboard:        http://localhost:5000")
-    print("  📁 IPFS Web UI:           https://webui.ipfs.io")
-    print("  🔗 IPFS Gateway:          http://localhost:8080")
-    print("  🗄️  MySQL phpMyAdmin:      http://localhost:8081")
+    print("  🌐 Main Dashboard:          http://localhost:5000")
+    print("  📁 IPFS Web UI:             https://webui.ipfs.io")
+    print("  🔗 IPFS Gateway:            http://localhost:8080")
+    print("  🗄️  MySQL phpMyAdmin:        http://localhost:8081")
+    print("  🔥 Hot Chain Explorer:      http://localhost:8090")
+    print("  ❄️  Cold Chain Explorer:     http://localhost:8091")
     print()
-    print("  Credentials for phpMyAdmin:")
-    print("    Username: cocuser")
-    print("    Password: cocpassword")
-    print("    Database: coc_evidence")
+    print("  Credentials:")
+    print("    phpMyAdmin:  cocuser / cocpassword")
+    print("    Explorers:   exploreradmin / exploreradminpw")
     print()
-    print("=" * 70)
+    print("=" * 75)
     print()
     print("🔧 API ENDPOINTS:")
     print()
@@ -349,7 +373,7 @@ if __name__ == '__main__':
     print("  GET  /api/ipfs/status          - IPFS node status")
     print("  GET  /api/containers/status    - Docker containers status")
     print()
-    print("=" * 70)
+    print("=" * 75)
     print()
     print("✅ System Ready - Press Ctrl+C to stop")
     print()
