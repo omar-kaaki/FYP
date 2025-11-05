@@ -6,6 +6,9 @@ version: '3.7'
 networks:
   hot-chain-network:
     name: hot-chain-network
+  coc-network:
+    external: true
+    name: coc-network
 
 services:
   # Orderer Service
@@ -52,6 +55,7 @@ services:
       - 8443:8443
     networks:
       - hot-chain-network
+      - coc-network
 
   # Peer0 - Law Enforcement Organization
   peer0.lawenforcement.hot.coc.com:
@@ -96,6 +100,7 @@ services:
       - couchdb0
     networks:
       - hot-chain-network
+      - coc-network
 
   # CouchDB for Peer0
   couchdb0:
@@ -108,6 +113,7 @@ services:
       - 5984:5984
     networks:
       - hot-chain-network
+      - coc-network
 
   # Peer0 - Forensic Lab Organization
   peer0.forensiclab.hot.coc.com:
@@ -152,6 +158,7 @@ services:
       - couchdb1
     networks:
       - hot-chain-network
+      - coc-network
 
   # CouchDB for Peer1
   couchdb1:
@@ -164,6 +171,7 @@ services:
       - 6984:5984
     networks:
       - hot-chain-network
+      - coc-network
 
   # CLI tool for network operations
   cli:
@@ -196,6 +204,7 @@ services:
       - peer0.forensiclab.hot.coc.com
     networks:
       - hot-chain-network
+      - coc-network
 
 volumes:
   orderer.hot.coc.com:

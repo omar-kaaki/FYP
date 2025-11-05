@@ -6,6 +6,9 @@ version: '3.7'
 networks:
   storage-network:
     name: storage-network
+  coc-network:
+    external: true
+    name: coc-network
 
 services:
   # IPFS Node - Distributed Evidence Storage
@@ -26,6 +29,7 @@ services:
       - ./shared/ipfs/staging:/staging
     networks:
       - storage-network
+      - coc-network
     restart: unless-stopped
 
   # MySQL Database - Off-chain Evidence Metadata
@@ -44,8 +48,9 @@ services:
       - ./shared/database/init:/docker-entrypoint-initdb.d
     networks:
       - storage-network
+      - coc-network
     restart: unless-stopped
-    command: --default-authentication-plugin=mysql_native_password
+    command: --default-authentication-plugin=mysql_native_password --ssl-mode=DISABLED
 
   # phpMyAdmin - Database Management UI
   phpmyadmin:
@@ -62,6 +67,7 @@ services:
       - mysql
     networks:
       - storage-network
+      - coc-network
     restart: unless-stopped
 
 volumes:

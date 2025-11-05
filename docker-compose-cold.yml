@@ -6,6 +6,9 @@ version: '3.7'
 networks:
   cold-chain-network:
     name: cold-chain-network
+  coc-network:
+    external: true
+    name: coc-network
 
 services:
   # Orderer Service
@@ -51,6 +54,7 @@ services:
       - 8543:8543
     networks:
       - cold-chain-network
+      - coc-network
 
   # Peer0 - Archive Organization
   peer0.archive.cold.coc.com:
@@ -95,6 +99,7 @@ services:
       - couchdb2
     networks:
       - cold-chain-network
+      - coc-network
 
   # CouchDB for Archive Peer
   couchdb2:
@@ -107,6 +112,7 @@ services:
       - 7984:5984
     networks:
       - cold-chain-network
+      - coc-network
 
   # CLI tool for cold chain operations
   cli-cold:
@@ -138,6 +144,7 @@ services:
       - peer0.archive.cold.coc.com
     networks:
       - cold-chain-network
+      - coc-network
 
 volumes:
   orderer.cold.coc.com:
