@@ -210,11 +210,18 @@ def containers_status():
 def ipfs_status():
     """Get IPFS node status"""
     try:
-        response = requests.get('http://localhost:5001/api/v0/version', timeout=5)
-        if response.status_code == 200:
-            return jsonify({"status": "running", "version": response.json()})
+        # Try docker exec since IPFS is in container
+        result = subprocess.run(
+            ["docker", "exec", "ipfs-node", "ipfs", "version"],
+            capture_output=True,
+            text=True,
+            timeout=5
+        )
+        if result.returncode == 0:
+            version = result.stdout.strip().split()[-1] if result.stdout else "unknown"
+            return jsonify({"status": "running", "Version": version})
         else:
-            return jsonify({"status": "error"}), 500
+            return jsonify({"status": "error", "error": result.stderr}), 500
     except Exception as e:
         return jsonify({"status": "offline", "error": str(e)}), 500
 
