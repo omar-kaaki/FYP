@@ -1,5 +1,3 @@
-version: '3.7'
-
 # COLD BLOCKCHAIN - Stores immutable evidence records
 # Based on AUB Project 68 specifications
 
@@ -96,7 +94,8 @@ services:
       - 9051:9051
       - 9543:9543
     depends_on:
-      - couchdb2
+      couchdb2:
+        condition: service_healthy
     networks:
       - cold-chain-network
       - coc-network
@@ -113,6 +112,11 @@ services:
     networks:
       - cold-chain-network
       - coc-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5984/_up"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # CLI tool for cold chain operations
   cli-cold:
