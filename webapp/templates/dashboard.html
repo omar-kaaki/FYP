@@ -671,6 +671,7 @@
                 description: document.getElementById('description').value,
                 hash: fileHash,
                 location: `ipfs://${uploadedIPFSHash}`,
+                blockchain: document.getElementById('blockchain').value,
                 metadata: JSON.stringify({
                     collected_by: document.getElementById('collectedBy').value,
                     filename: selectedFile.name,
@@ -702,6 +703,7 @@
                     selectedFile = null;
                     uploadedIPFSHash = null;
                     loadEvidenceList();
+                    loadIPFSFiles();
                 } else {
                     resultDiv.innerHTML = `<div class="alert alert-error">Error: ${data.error}</div>`;
                 }
@@ -800,6 +802,40 @@
             }
         }
 
+        async function loadIPFSFiles() {
+            try {
+                const response = await fetch('/api/ipfs/files');
+                const data = await response.json();
+
+                const filesDiv = document.getElementById('ipfs-files');
+
+                if (data.success && data.files && data.files.length > 0) {
+                    let html = '<div style="margin-top: 16px; padding: 12px; background: #f8f9fa; border-radius: 6px;">';
+                    html += '<div style="font-weight: 600; margin-bottom: 8px; color: #2c3e50;">Evidence Files:</div>';
+                    html += '<div style="max-height: 200px; overflow-y: auto;">';
+
+                    data.files.forEach(file => {
+                        html += `
+                            <div style="padding: 8px; margin-bottom: 4px; background: white; border-radius: 4px; border: 1px solid #e0e0e0;">
+                                <div style="font-size: 11px; color: #7f8c8d; font-family: monospace; margin-bottom: 4px;">${file.hash}</div>
+                                <a href="${file.gateway_url}" target="_blank" style="font-size: 12px; color: #3498db; text-decoration: none;">
+                                    📄 View/Download
+                                </a>
+                            </div>
+                        `;
+                    });
+
+                    html += '</div></div>';
+                    filesDiv.innerHTML = html;
+                } else {
+                    filesDiv.innerHTML = '<div style="margin-top: 16px; font-size: 12px; color: #7f8c8d;">No files uploaded yet</div>';
+                }
+            } catch (error) {
+                document.getElementById('ipfs-files').innerHTML =
+                    `<div class="alert alert-error">Error loading files: ${error.message}</div>`;
+            }
+        }
+
         async function loadEvidenceList() {
             try {
                 const response = await fetch('/api/evidence/list');
@@ -863,6 +899,7 @@
             loadBlockchainStatus();
             loadContainers();
             loadIPFSStatus();
+            loadIPFSFiles();
             loadEvidenceList();
         }
 

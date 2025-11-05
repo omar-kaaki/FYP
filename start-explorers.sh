@@ -21,17 +21,63 @@ fi
 echo "✓ Blockchains are running"
 echo ""
 
-# Start explorers
-echo "Starting explorer services..."
-docker-compose -f docker-compose-explorers.yml up -d
+# Stop any existing explorers
+echo "Stopping any existing explorer containers..."
+docker-compose -f docker-compose-explorers.yml down 2>/dev/null
+
+# Start explorer databases first
+echo "Starting explorer databases..."
+docker-compose -f docker-compose-explorers.yml up -d explorerdb-hot explorerdb-cold
 
 echo ""
-echo "Waiting for explorer databases to initialize (30 seconds)..."
+echo "Waiting for databases to be healthy (30 seconds)..."
 sleep 30
+
+# Check database health
+echo "Checking database health..."
+if docker ps | grep -q "explorerdb-hot.*healthy"; then
+    echo "✓ Hot database is healthy"
+else
+    echo "⚠️  Hot database not healthy yet, waiting 10 more seconds..."
+    sleep 10
+fi
+
+if docker ps | grep -q "explorerdb-cold.*healthy"; then
+    echo "✓ Cold database is healthy"
+else
+    echo "⚠️  Cold database not healthy yet, waiting 10 more seconds..."
+    sleep 10
+fi
+
+# Start explorer web interfaces
+echo ""
+echo "Starting explorer web interfaces..."
+docker-compose -f docker-compose-explorers.yml up -d explorer-hot explorer-cold
+
+echo ""
+echo "Waiting for explorers to initialize (20 seconds)..."
+sleep 20
+
+# Verify explorers are running
+echo ""
+echo "Checking explorer status..."
+if docker ps | grep -q "explorer-hot"; then
+    echo "✓ Hot Chain Explorer is running"
+else
+    echo "❌ Hot Chain Explorer failed to start"
+    echo "   Check logs: docker logs explorer-hot"
+fi
+
+if docker ps | grep -q "explorer-cold"; then
+    echo "✓ Cold Chain Explorer is running"
+else
+    echo "❌ Cold Chain Explorer failed to start"
+    echo "   Check logs: docker logs explorer-cold"
+fi
 
 echo ""
 echo "========================================"
-echo "✅ Explorers Started Successfully!"
+echo "✅ Explorers Started!"
 echo "========================================"
 echo ""
 echo "Access the explorers at:"
@@ -44,4 +90,7 @@ echo "  Username: exploreradmin"
 echo "  Password: exploreradminpw"
 echo ""
 echo "Note: First-time startup may take 1-2 minutes to sync"
+echo "      If explorers don't load, check logs with:"
+echo "        docker logs explorer-hot"
+echo "        docker logs explorer-cold"
 echo "========================================"

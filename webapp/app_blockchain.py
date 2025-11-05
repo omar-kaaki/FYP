@@ -126,10 +126,13 @@ def create_evidence():
         if not all(k in data for k in required):
             return jsonify({"error": "Missing required fields"}), 400
 
-        # Create evidence on Hot blockchain
+        # Choose blockchain based on target
+        channel = "coldchannel" if data.get('blockchain') == 'cold' else "hotchannel"
+
+        # Create evidence on blockchain
         result = exec_chaincode(
             "invoke",
-            "hotchannel",
+            channel,
             CHAINCODE_NAME,
             "CreateEvidenceSimple",
             [
@@ -142,6 +145,41 @@ def create_evidence():
                 data.get('metadata', '{}')
             ]
         )
+
+        # If successful, also save to MySQL for quick listing
+        if result.get('success'):
+            try:
+                db = get_db()
+                if db:
+                    cursor = db.cursor()
+
+                    # Parse metadata
+                    metadata = json.loads(data.get('metadata', '{}'))
+
+                    # Insert into MySQL
+                    cursor.execute("""
+                        INSERT INTO evidence_metadata
+                        (evidence_id, case_id, evidence_type, description, file_hash,
+                         ipfs_hash, collected_by, blockchain, collected_timestamp)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                    """, (
+                        data['id'],
+                        data['case_id'],
+                        data['type'],
+                        data['description'],
+                        data['hash'],
+                        data['location'].replace('ipfs://', ''),
+                        metadata.get('collected_by', 'Unknown'),
+                        channel,
+                        metadata.get('timestamp', datetime.now().isoformat())
+                    ))
+
+                    db.commit()
+                    cursor.close()
+                    db.close()
+            except Exception as db_error:
+                print(f"MySQL storage warning: {db_error}")
+                # Don't fail the request if MySQL fails - blockchain is source of truth
 
         return jsonify(result)
     except Exception as e:
@@ -330,6 +368,36 @@ def ipfs_upload():
                 except:
                     pass
 
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/ipfs/files')
+def ipfs_files():
+    """List all pinned files in IPFS"""
+    try:
+        # List all pinned files
+        result = subprocess.run(
+            ["docker", "exec", "ipfs-node", "ipfs", "pin", "ls", "--type=recursive"],
+            capture_output=True,
+            text=True,
+            timeout=10
+        )
+
+        if result.returncode == 0:
+            files = []
+            for line in result.stdout.strip().split('\n'):
+                if line:
+                    # Format: Qm... recursive
+                    parts = line.split()
+                    if parts:
+                        ipfs_hash = parts[0]
+                        files.append({
+                            "hash": ipfs_hash,
+                            "gateway_url": f"http://localhost:8080/ipfs/{ipfs_hash}"
+                        })
+            return jsonify({"success": True, "files": files})
+        else:
+            return jsonify({"error": result.stderr}), 500
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
