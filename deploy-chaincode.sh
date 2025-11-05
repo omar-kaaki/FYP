@@ -17,7 +17,7 @@ NC='\033[0m'
 # Chaincode configuration
 CC_NAME="dfir"
 CC_VERSION="1.0"
-CC_SEQUENCE=1
+CC_SEQUENCE=2
 CC_SRC_PATH="github.com/chaincode"
 
 # Set environment
@@ -98,8 +98,7 @@ docker exec cli peer lifecycle chaincode approveformyorg \
     --name ${CC_NAME} \
     --version ${CC_VERSION} \
     --package-id ${PACKAGE_ID} \
-    --sequence ${CC_SEQUENCE} \
-    --init-required
+    --sequence ${CC_SEQUENCE}
 check_result "Approved for Law Enforcement"
 
 # Step 7: Approve chaincode for Forensic Lab
@@ -117,8 +116,7 @@ docker exec \
     --name ${CC_NAME} \
     --version ${CC_VERSION} \
     --package-id ${PACKAGE_ID} \
-    --sequence ${CC_SEQUENCE} \
-    --init-required
+    --sequence ${CC_SEQUENCE}
 check_result "Approved for Forensic Lab"
 
 # Step 8: Commit chaincode to Hot blockchain channel
@@ -131,7 +129,6 @@ docker exec cli peer lifecycle chaincode commit \
     --name ${CC_NAME} \
     --version ${CC_VERSION} \
     --sequence ${CC_SEQUENCE} \
-    --init-required \
     --peerAddresses peer0.lawenforcement.hot.coc.com:7051 \
     --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/lawenforcement.hot.coc.com/peers/peer0.lawenforcement.hot.coc.com/tls/ca.crt \
     --peerAddresses peer0.forensiclab.hot.coc.com:8051 \
@@ -168,8 +165,7 @@ docker exec cli-cold peer lifecycle chaincode approveformyorg \
     --name ${CC_NAME} \
     --version ${CC_VERSION} \
     --package-id ${PACKAGE_ID_COLD} \
-    --sequence ${CC_SEQUENCE} \
-    --init-required
+    --sequence ${CC_SEQUENCE}
 check_result "Approved for Archive organization"
 
 # Commit to cold blockchain channel
@@ -181,7 +177,6 @@ docker exec cli-cold peer lifecycle chaincode commit \
     --name ${CC_NAME} \
     --version ${CC_VERSION} \
     --sequence ${CC_SEQUENCE} \
-    --init-required \
     --peerAddresses peer0.archive.cold.coc.com:9051 \
     --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/archive.cold.coc.com/peers/peer0.archive.cold.coc.com/tls/ca.crt
 check_result "Committed to Cold blockchain"
@@ -200,7 +195,6 @@ docker exec cli peer chaincode invoke \
     -n ${CC_NAME} \
     --peerAddresses peer0.lawenforcement.hot.coc.com:7051 \
     --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/lawenforcement.hot.coc.com/peers/peer0.lawenforcement.hot.coc.com/tls/ca.crt \
-    --isInit \
     -c '{"function":"InitLedger","Args":["0000000000000000000000000000000000000000000000000000000000000000","0000000000000000000000000000000000000000000000000000000000000000","0000000000000000000000000000000000000000000000000000000000000000"]}' \
     2>&1
 check_result "Hot blockchain initialized"
@@ -215,7 +209,6 @@ docker exec cli-cold peer chaincode invoke \
     -n ${CC_NAME} \
     --peerAddresses peer0.archive.cold.coc.com:9051 \
     --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/archive.cold.coc.com/peers/peer0.archive.cold.coc.com/tls/ca.crt \
-    --isInit \
     -c '{"function":"InitLedger","Args":["0000000000000000000000000000000000000000000000000000000000000000","0000000000000000000000000000000000000000000000000000000000000000","0000000000000000000000000000000000000000000000000000000000000000"]}' \
     2>&1
 check_result "Cold blockchain initialized"

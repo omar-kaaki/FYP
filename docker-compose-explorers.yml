@@ -3,10 +3,10 @@ version: '3.8'
 networks:
   hot:
     external: true
-    name: hot-network
+    name: hot-chain-network
   cold:
     external: true
-    name: cold-network
+    name: cold-chain-network
 
 services:
   # PostgreSQL for Hot Explorer
