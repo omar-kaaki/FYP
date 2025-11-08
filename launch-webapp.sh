@@ -9,6 +9,7 @@
 GREEN='\033[0;32m'
 BLUE='\033[0;34m'
 YELLOW='\033[1;33m'
+RED='\033[0;31m'
 NC='\033[0m' # No Color
 
 PROJECT_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -49,14 +50,10 @@ fi
 echo -e "${GREEN}Starting Flask web application...${NC}"
 cd "$PROJECT_ROOT/webapp"
 
-# Check if virtual environment exists
-if [ ! -d "venv" ]; then
-    echo -e "${YELLOW}Creating Python virtual environment...${NC}"
-    python3 -m venv venv
-    source venv/bin/activate
-    pip install -q flask mysql-connector-python
-else
-    source venv/bin/activate
+# Check Python and required packages
+if ! python3 -c "import flask" 2>/dev/null; then
+    echo -e "${YELLOW}Installing required Python packages...${NC}"
+    pip3 install flask mysql-connector-python requests --user
 fi
 
 # Set environment variables
@@ -64,6 +61,7 @@ export FLASK_APP=app_blockchain.py
 export FLASK_ENV=development
 
 # Start the app in background
+echo -e "${YELLOW}Starting webapp in background...${NC}"
 nohup python3 app_blockchain.py > flask.log 2>&1 &
 WEBAPP_PID=$!
 
@@ -71,14 +69,15 @@ echo -e "${GREEN}✓ Webapp started (PID: $WEBAPP_PID)${NC}"
 echo ""
 
 # Wait for webapp to be ready
-echo -e "${YELLOW}Waiting for webapp to initialize...${NC}"
-sleep 3
+echo -e "${YELLOW}Waiting for webapp to initialize (5 seconds)...${NC}"
+sleep 5
 
 # Check if webapp is responding
-if curl -s http://localhost:5000 > /dev/null; then
+if curl -s http://localhost:5000/health > /dev/null 2>&1; then
     echo -e "${GREEN}✓ Webapp is responding${NC}"
 else
-    echo -e "${YELLOW}⚠  Webapp may still be initializing...${NC}"
+    echo -e "${RED}⚠  Webapp may still be starting up or has errors${NC}"
+    echo -e "${YELLOW}Check logs with: tail -f $PROJECT_ROOT/webapp/flask.log${NC}"
 fi
 
 echo ""
