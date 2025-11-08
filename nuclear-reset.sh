@@ -136,8 +136,32 @@ sleep 15
 echo -e "${GREEN}✓ Cold blockchain started${NC}"
 echo ""
 
-# 12. Join Hot channel peers (Fabric 2.5 style)
-echo -e "${YELLOW}[12/15] Joining Hot channel peers...${NC}"
+# 12. Join Hot orderer to channel
+echo -e "${YELLOW}[12/15] Joining Hot orderer to channel...${NC}"
+docker exec cli osnadmin channel join \
+    --channelID hotchannel \
+    --config-block /opt/gopath/src/github.com/hyperledger/fabric/peer/channel-artifacts/hotchannel.block \
+    -o orderer.hot.coc.com:7053 \
+    --ca-file /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/hot.coc.com/orderers/orderer.hot.coc.com/tls/ca.crt \
+    --client-cert /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/hot.coc.com/orderers/orderer.hot.coc.com/tls/server.crt \
+    --client-key /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/hot.coc.com/orderers/orderer.hot.coc.com/tls/server.key
+echo -e "${GREEN}✓ Hot orderer joined channel${NC}"
+echo ""
+
+# 13. Join Cold orderer to channel
+echo -e "${YELLOW}[13/15] Joining Cold orderer to channel...${NC}"
+docker exec cli-cold osnadmin channel join \
+    --channelID coldchannel \
+    --config-block /opt/gopath/src/github.com/hyperledger/fabric/peer/channel-artifacts/coldchannel.block \
+    -o orderer.cold.coc.com:7153 \
+    --ca-file /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/cold.coc.com/orderers/orderer.cold.coc.com/tls/ca.crt \
+    --client-cert /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/cold.coc.com/orderers/orderer.cold.coc.com/tls/server.crt \
+    --client-key /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/cold.coc.com/orderers/orderer.cold.coc.com/tls/server.key
+echo -e "${GREEN}✓ Cold orderer joined channel${NC}"
+echo ""
+
+# 14. Join Hot channel peers (Fabric 2.5 style)
+echo -e "${YELLOW}[14/17] Joining Hot channel peers...${NC}"
 
 # Verify containers are running
 echo "Checking container status..."
@@ -178,8 +202,8 @@ peer channel join -b /opt/gopath/src/github.com/hyperledger/fabric/peer/hotchann
 echo -e "${GREEN}✓ Hot channel created${NC}"
 echo ""
 
-# 13. Join Cold channel peers
-echo -e "${YELLOW}[13/15] Joining Cold channel peers...${NC}"
+# 15. Join Cold channel peers
+echo -e "${YELLOW}[15/17] Joining Cold channel peers...${NC}"
 
 docker cp cold-blockchain/channel-artifacts/coldchannel.block cli-cold:/opt/gopath/src/github.com/hyperledger/fabric/peer/
 docker exec cli-cold peer channel join -b /opt/gopath/src/github.com/hyperledger/fabric/peer/coldchannel.block
@@ -187,16 +211,16 @@ docker exec cli-cold peer channel join -b /opt/gopath/src/github.com/hyperledger
 echo -e "${GREEN}✓ Cold channel created${NC}"
 echo ""
 
-# 14. Verify channels
-echo -e "${YELLOW}[14/15] Verifying channels...${NC}"
+# 16. Verify channels
+echo -e "${YELLOW}[16/17] Verifying channels...${NC}"
 HOT_HEIGHT=$(docker exec cli peer channel getinfo -c hotchannel 2>/dev/null | grep -oP '(?<="height":)\d+' || echo "1")
 COLD_HEIGHT=$(docker exec cli-cold peer channel getinfo -c coldchannel 2>/dev/null | grep -oP '(?<="height":)\d+' || echo "1")
 echo -e "${GREEN}✓ Hot Height: $HOT_HEIGHT${NC}"
 echo -e "${GREEN}✓ Cold Height: $COLD_HEIGHT${NC}"
 echo ""
 
-# 15. Update anchor peers
-echo -e "${YELLOW}[15/15] Updating anchor peers...${NC}"
+# 17. Update anchor peers
+echo -e "${YELLOW}[17/17] Updating anchor peers...${NC}"
 export FABRIC_CFG_PATH="$PROJECT_ROOT/hot-blockchain"
 configtxgen -profile HotChainChannel -outputAnchorPeersUpdate ./hot-blockchain/channel-artifacts/LawEnforcementMSPanchors.tx -channelID hotchannel -asOrg LawEnforcementMSP || true
 configtxgen -profile HotChainChannel -outputAnchorPeersUpdate ./hot-blockchain/channel-artifacts/ForensicLabMSPanchors.tx -channelID hotchannel -asOrg ForensicLabMSP || true
