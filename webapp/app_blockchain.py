@@ -129,6 +129,14 @@ def create_evidence():
         # Choose blockchain based on target
         channel = "coldchannel" if data.get('blockchain') == 'cold' else "hotchannel"
 
+        # Parse metadata to get timestamp
+        metadata = json.loads(data.get('metadata', '{}'))
+        timestamp = metadata.get('timestamp', datetime.now().isoformat())
+
+        # Convert ISO timestamp to Unix timestamp (int64)
+        from dateutil import parser
+        timestamp_unix = int(parser.parse(timestamp).timestamp())
+
         # Create evidence on blockchain
         result = exec_chaincode(
             "invoke",
@@ -142,7 +150,8 @@ def create_evidence():
                 data['description'],
                 data['hash'],
                 data['location'],
-                data.get('metadata', '{}')
+                data.get('metadata', '{}'),
+                str(timestamp_unix)  # Pass timestamp as 8th parameter
             ]
         )
 

@@ -93,7 +93,7 @@ func (cc *DFIRChaincode) InitLedger(ctx contractapi.TransactionContextInterface,
 // CreateEvidence creates new evidence without permit (simplified for testing)
 func (cc *DFIRChaincode) CreateEvidenceSimple(ctx contractapi.TransactionContextInterface,
 	id string, caseID string, evidenceType string, description string,
-	hash string, location string, metadata string) error {
+	hash string, location string, metadata string, timestamp int64) error {
 
 	clientID, err := ctx.GetClientIdentity().GetID()
 	if err != nil {
@@ -116,7 +116,7 @@ func (cc *DFIRChaincode) CreateEvidenceSimple(ctx contractapi.TransactionContext
 		Hash:        hash,
 		Location:    location,
 		Custodian:   clientID,
-		Timestamp:   time.Now().Unix(),
+		Timestamp:   timestamp,
 		Status:      "collected",
 		Metadata:    metadata,
 	}
