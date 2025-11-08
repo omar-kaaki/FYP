@@ -462,7 +462,14 @@
 
                     <div class="form-group">
                         <label>Case ID *</label>
-                        <input type="text" id="caseId" placeholder="E.g., CASE-2025-001" required>
+                        <select id="caseId" required>
+                            <option value="">Select a case...</option>
+                        </select>
+                        <div style="margin-top: 8px;">
+                            <button type="button" class="btn btn-secondary" onclick="showCreateCaseModal()" style="font-size: 13px; padding: 8px 12px;">
+                                ➕ Create New Case
+                            </button>
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -575,6 +582,107 @@
             <div id="containers-list" class="loading">Loading containers...</div>
         </div>
     </div>
+
+    <!-- Case Creation Modal -->
+    <div id="createCaseModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 600px; max-height: 90vh; overflow-y: auto;">
+            <span class="close" onclick="hideCreateCaseModal()">&times;</span>
+            <h2 style="margin-top: 0;">➕ Create New Case</h2>
+
+            <form id="createCaseForm" onsubmit="createCase(event)">
+                <div class="form-group">
+                    <label>Case ID *</label>
+                    <input type="text" id="newCaseId" placeholder="E.g., CASE-001" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Case Name *</label>
+                    <input type="text" id="caseName" placeholder="E.g., Cybercrime Investigation 2025" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Case Number *</label>
+                    <input type="text" id="caseNumber" placeholder="E.g., INV-2025-001" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Case Type</label>
+                    <select id="caseType">
+                        <option value="Digital Forensics">Digital Forensics</option>
+                        <option value="Cybercrime">Cybercrime</option>
+                        <option value="Financial Fraud">Financial Fraud</option>
+                        <option value="Data Breach">Data Breach</option>
+                        <option value="Incident Response">Incident Response</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label>Investigating Agency *</label>
+                    <input type="text" id="investigatingAgency" placeholder="E.g., FBI, Local Police" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Lead Investigator *</label>
+                    <input type="text" id="leadInvestigator" placeholder="E.g., Agent John Smith" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Opened Date *</label>
+                    <input type="date" id="openedDate" required>
+                </div>
+
+                <div class="form-group">
+                    <label>Description</label>
+                    <textarea id="caseDescription" rows="3" placeholder="Brief case description..."></textarea>
+                </div>
+
+                <div style="display: flex; gap: 10px; margin-top: 20px;">
+                    <button type="submit" class="btn btn-success" style="flex: 1;">Create Case</button>
+                    <button type="button" class="btn btn-secondary" onclick="hideCreateCaseModal()" style="flex: 1;">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <style>
+        .modal {
+            position: fixed;
+            z-index: 10000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            padding: 30px;
+            border-radius: 8px;
+            width: 90%;
+            position: relative;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+        }
+
+        .close {
+            color: #aaa;
+            float: right;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            line-height: 20px;
+        }
+
+        .close:hover,
+        .close:focus {
+            color: #000;
+        }
+    </style>
 
     <script>
         let selectedFile = null;
@@ -894,6 +1002,78 @@
             }
         }
 
+        // Case Management Functions
+        async function loadCases() {
+            try {
+                const response = await fetch('/api/cases/list');
+                const cases = await response.json();
+
+                const caseSelect = document.getElementById('caseId');
+                caseSelect.innerHTML = '<option value="">Select a case...</option>';
+
+                cases.forEach(c => {
+                    const option = document.createElement('option');
+                    option.value = c.case_id;
+                    option.textContent = `${c.case_id} - ${c.case_name}`;
+                    caseSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading cases:', error);
+            }
+        }
+
+        function showCreateCaseModal() {
+            document.getElementById('createCaseModal').style.display = 'flex';
+            // Set default date to today
+            document.getElementById('openedDate').valueAsDate = new Date();
+        }
+
+        function hideCreateCaseModal() {
+            document.getElementById('createCaseModal').style.display = 'none';
+            document.getElementById('createCaseForm').reset();
+        }
+
+        async function createCase(event) {
+            event.preventDefault();
+
+            const caseData = {
+                case_id: document.getElementById('newCaseId').value,
+                case_name: document.getElementById('caseName').value,
+                case_number: document.getElementById('caseNumber').value,
+                case_type: document.getElementById('caseType').value,
+                investigating_agency: document.getElementById('investigatingAgency').value,
+                lead_investigator: document.getElementById('leadInvestigator').value,
+                opened_date: document.getElementById('openedDate').value,
+                description: document.getElementById('caseDescription').value || ''
+            };
+
+            try {
+                const response = await fetch('/api/cases/create', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(caseData)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert(`✅ Case created successfully!\n\nCase ID: ${caseData.case_id}\nCase Name: ${caseData.case_name}`);
+                    hideCreateCaseModal();
+                    loadCases(); // Refresh the case dropdown
+                    // Auto-select the newly created case
+                    setTimeout(() => {
+                        document.getElementById('caseId').value = caseData.case_id;
+                    }, 500);
+                } else {
+                    alert(`❌ Error: ${data.error}`);
+                }
+            } catch (error) {
+                alert(`❌ Error creating case: ${error.message}`);
+            }
+        }
+
         // Auto-refresh
         function refreshData() {
             loadBlockchainStatus();
@@ -901,6 +1081,7 @@
             loadIPFSStatus();
             loadIPFSFiles();
             loadEvidenceList();
+            loadCases(); // Also load cases
         }
 
         // Initial load
