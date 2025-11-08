@@ -177,6 +177,19 @@ def create_evidence():
                     # Convert channel name to blockchain_type enum value
                     blockchain_type = 'cold' if channel == 'coldchannel' else 'hot'
 
+                    # Remove 'sha256:' prefix from hash if present
+                    clean_hash = data['hash'].replace('sha256:', '')
+
+                    # Convert timestamp to MySQL datetime format
+                    timestamp_str = metadata.get('timestamp', datetime.now().isoformat())
+                    try:
+                        if timestamp_str.endswith('Z'):
+                            timestamp_str = timestamp_str[:-1]
+                        timestamp_dt = datetime.fromisoformat(timestamp_str)
+                        mysql_timestamp = timestamp_dt.strftime('%Y-%m-%d %H:%M:%S')
+                    except:
+                        mysql_timestamp = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
                     # Insert into MySQL
                     cursor.execute("""
                         INSERT INTO evidence_metadata
@@ -188,19 +201,24 @@ def create_evidence():
                         data['case_id'],
                         data['type'],
                         data['description'],
-                        data['hash'],
+                        clean_hash,
                         data['location'].replace('ipfs://', ''),
                         metadata.get('collected_by', 'Unknown'),
                         blockchain_type,
-                        metadata.get('timestamp', datetime.now().isoformat()),
+                        mysql_timestamp,
                         metadata.get('location', 'Unknown')
                     ))
 
                     db.commit()
                     cursor.close()
                     db.close()
+                    print(f"✓ Evidence {data['id']} saved to MySQL successfully")
             except Exception as db_error:
-                print(f"MySQL storage warning: {db_error}")
+                import traceback
+                error_details = traceback.format_exc()
+                print(f"❌ MySQL storage ERROR for evidence {data['id']}:")
+                print(f"   Error: {db_error}")
+                print(f"   Details: {error_details}")
                 # Don't fail the request if MySQL fails - blockchain is source of truth
 
         return jsonify(result)

@@ -13,16 +13,16 @@
 
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: #f5f5f5;
-            color: #333;
+            background: #0a0a0a;
+            color: #e0e0e0;
             line-height: 1.6;
         }
 
         .header {
-            background: #ffffff;
-            border-bottom: 2px solid #e0e0e0;
+            background: #1a1a1a;
+            border-bottom: 2px solid #333;
             padding: 20px 0;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
 
         .header-content {
@@ -43,18 +43,18 @@
         .logo h1 {
             font-size: 24px;
             font-weight: 600;
-            color: #2c3e50;
+            color: #ffffff;
         }
 
         .logo-icon {
             width: 40px;
             height: 40px;
-            background: #3498db;
+            background: #ffffff;
             border-radius: 8px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: white;
+            color: #000000;
             font-weight: bold;
         }
 
@@ -96,80 +96,87 @@
         }
 
         .card {
-            background: white;
+            background: #1a1a1a;
+            border: 1px solid #333;
             border-radius: 8px;
             padding: 24px;
-            border: 1px solid #e0e0e0;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.4);
         }
 
         .card h2 {
             font-size: 18px;
             font-weight: 600;
-            color: #2c3e50;
+            color: #ffffff;
             margin-bottom: 16px;
             padding-bottom: 12px;
-            border-bottom: 1px solid #e0e0e0;
+            border-bottom: 1px solid #333;
         }
 
         .upload-area {
-            border: 2px dashed #bdc3c7;
+            border: 2px dashed #555;
             border-radius: 8px;
             padding: 40px;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s;
             margin: 16px 0;
+            background: #0f0f0f;
         }
 
         .upload-area:hover {
-            border-color: #3498db;
-            background: #f8f9fa;
+            border-color: #888;
+            background: #1a1a1a;
         }
 
         .upload-area.dragover {
-            border-color: #3498db;
-            background: #e3f2fd;
+            border-color: #fff;
+            background: #222;
         }
 
         .upload-icon {
             font-size: 48px;
-            color: #95a5a6;
+            color: #999;
             margin-bottom: 12px;
         }
 
         .btn {
-            background: #3498db;
-            color: white;
-            border: none;
+            background: #ffffff;
+            color: #000000;
+            border: 1px solid #ffffff;
             padding: 10px 20px;
             border-radius: 6px;
             cursor: pointer;
             font-size: 14px;
             font-weight: 500;
-            transition: background 0.2s;
+            transition: all 0.2s;
             display: inline-block;
             text-decoration: none;
         }
 
         .btn:hover {
-            background: #2980b9;
+            background: #e0e0e0;
+            border-color: #e0e0e0;
         }
 
         .btn-secondary {
-            background: #95a5a6;
+            background: #333;
+            color: #ffffff;
+            border: 1px solid #555;
         }
 
         .btn-secondary:hover {
-            background: #7f8c8d;
+            background: #444;
+            border-color: #666;
         }
 
         .btn-success {
-            background: #27ae60;
+            background: #ffffff;
+            color: #000000;
+            border: 1px solid #ffffff;
         }
 
         .btn-success:hover {
-            background: #229954;
+            background: #e0e0e0;
         }
 
         .form-group {
@@ -180,7 +187,7 @@
             display: block;
             font-size: 14px;
             font-weight: 500;
-            color: #2c3e50;
+            color: #e0e0e0;
             margin-bottom: 6px;
         }
 
@@ -189,17 +196,20 @@
         .form-group select {
             width: 100%;
             padding: 10px 12px;
-            border: 1px solid #d0d0d0;
+            border: 1px solid #444;
             border-radius: 6px;
             font-size: 14px;
             font-family: inherit;
+            background: #0f0f0f;
+            color: #e0e0e0;
         }
 
         .form-group input:focus,
         .form-group textarea:focus,
         .form-group select:focus {
             outline: none;
-            border-color: #3498db;
+            border-color: #888;
+            background: #1a1a1a;
         }
 
         table {
@@ -211,18 +221,19 @@
         th, td {
             padding: 12px;
             text-align: left;
-            border-bottom: 1px solid #e0e0e0;
+            border-bottom: 1px solid #333;
             font-size: 14px;
+            color: #e0e0e0;
         }
 
         th {
-            background: #f8f9fa;
+            background: #0f0f0f;
             font-weight: 600;
-            color: #2c3e50;
+            color: #ffffff;
         }
 
         tr:hover {
-            background: #f8f9fa;
+            background: #222;
         }
 
         .badge {
@@ -234,18 +245,21 @@
         }
 
         .badge-success {
-            background: #d4edda;
-            color: #155724;
+            background: #1a3a1a;
+            color: #90ee90;
+            border: 1px solid #2d5a2d;
         }
 
         .badge-warning {
-            background: #fff3cd;
-            color: #856404;
+            background: #3a3a1a;
+            color: #ffeb3b;
+            border: 1px solid #5a5a2d;
         }
 
         .badge-info {
-            background: #d1ecf1;
-            color: #0c5460;
+            background: #1a2a3a;
+            color: #87ceeb;
+            border: 1px solid #2d4a5a;
         }
 
         .alert {
@@ -256,27 +270,27 @@
         }
 
         .alert-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
+            background: #1a3a1a;
+            color: #90ee90;
+            border: 1px solid #2d5a2d;
         }
 
         .alert-error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+            background: #3a1a1a;
+            color: #ff6b6b;
+            border: 1px solid #5a2d2d;
         }
 
         .alert-info {
-            background: #d1ecf1;
-            color: #0c5460;
-            border: 1px solid #bee5eb;
+            background: #1a2a3a;
+            color: #87ceeb;
+            border: 1px solid #2d4a5a;
         }
 
         .loading {
             text-align: center;
             padding: 20px;
-            color: #95a5a6;
+            color: #888;
         }
 
         .stat-card {
@@ -287,13 +301,13 @@
         .stat-number {
             font-size: 36px;
             font-weight: 700;
-            color: #2c3e50;
+            color: #ffffff;
             margin-bottom: 8px;
         }
 
         .stat-label {
             font-size: 14px;
-            color: #7f8c8d;
+            color: #999;
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
@@ -305,14 +319,14 @@
 
         .ipfs-file-item {
             padding: 10px;
-            border-bottom: 1px solid #e0e0e0;
+            border-bottom: 1px solid #333;
             display: flex;
             justify-content: space-between;
             align-items: center;
         }
 
         .ipfs-file-item:hover {
-            background: #f8f9fa;
+            background: #222;
         }
 
         .file-info {
@@ -531,26 +545,6 @@
             </div>
         </div>
 
-        <!-- Evidence List -->
-        <div class="card">
-            <h2>📋 Evidence Records</h2>
-            <div class="tabs">
-                <button class="tab active" onclick="switchTab('recent')">Recent Evidence</button>
-                <button class="tab" onclick="switchTab('search')">Search Evidence</button>
-            </div>
-
-            <div id="recent-tab" class="tab-content active">
-                <div id="evidence-list" class="loading">Loading evidence...</div>
-            </div>
-
-            <div id="search-tab" class="tab-content">
-                <div class="form-group">
-                    <input type="text" id="searchId" placeholder="Enter Evidence ID to search...">
-                </div>
-                <button class="btn" onclick="searchEvidence()">Search</button>
-                <div id="search-result"></div>
-            </div>
-        </div>
 
         <!-- Blockchain Status -->
         <div class="grid">
@@ -661,16 +655,17 @@
         }
 
         .modal-content {
-            background-color: #fefefe;
+            background-color: #1a1a1a;
+            border: 1px solid #333;
             padding: 30px;
             border-radius: 8px;
             width: 90%;
             position: relative;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 20px rgba(0,0,0,0.8);
         }
 
         .close {
-            color: #aaa;
+            color: #888;
             float: right;
             font-size: 28px;
             font-weight: bold;
@@ -680,7 +675,7 @@
 
         .close:hover,
         .close:focus {
-            color: #000;
+            color: #fff;
         }
     </style>
 
