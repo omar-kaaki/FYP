@@ -44,8 +44,9 @@ services:
       - LOG_CONSOLE_STDOUT=true
       - DISCOVERY_AS_LOCALHOST=false
     volumes:
-      - ./explorer-config/hot:/opt/explorer/app/platform/fabric/connection-profile
-      - ./crypto-config:/tmp/crypto
+      - ./explorer-config/hot/config.json:/opt/explorer/app/platform/fabric/config.json
+      - ./explorer-config/hot/hot-network.json:/opt/explorer/app/platform/fabric/connection-profile/hot-network.json
+      - ./hot-blockchain/crypto-config:/tmp/crypto
     ports:
       - 8090:8080
     depends_on:
@@ -88,8 +89,9 @@ services:
       - LOG_CONSOLE_STDOUT=true
       - DISCOVERY_AS_LOCALHOST=false
     volumes:
-      - ./explorer-config/cold:/opt/explorer/app/platform/fabric/connection-profile
-      - ./crypto-config:/tmp/crypto
+      - ./explorer-config/cold/config.json:/opt/explorer/app/platform/fabric/config.json
+      - ./explorer-config/cold/cold-network.json:/opt/explorer/app/platform/fabric/connection-profile/cold-network.json
+      - ./cold-blockchain/crypto-config:/tmp/crypto
     ports:
       - 8091:8080
     depends_on:
