@@ -132,14 +132,24 @@ echo -e "${YELLOW}[12/15] Joining Hot channel peers...${NC}"
 
 # Verify containers are running
 echo "Checking container status..."
-docker ps --filter "name=peer0.lawenforcement.hot.coc.com" --format "{{.Names}}: {{.Status}}"
-docker ps --filter "name=peer0.forensiclab.hot.coc.com" --format "{{.Names}}: {{.Status}}"
-docker ps --filter "name=cli" --format "{{.Names}}: {{.Status}}"
+PEER0_LE=$(docker ps -q --filter "name=peer0.lawenforcement.hot.coc.com")
+PEER0_FL=$(docker ps -q --filter "name=peer0.forensiclab.hot.coc.com")
 
-# Check network connectivity
-echo "Testing network connectivity..."
-docker exec cli sh -c 'nc -zv peer0.lawenforcement.hot.coc.com 7051 2>&1 || echo "Cannot reach peer0.lawenforcement.hot.coc.com:7051"'
-docker exec cli sh -c 'nc -zv peer0.forensiclab.hot.coc.com 8051 2>&1 || echo "Cannot reach peer0.forensiclab.hot.coc.com:8051"'
+if [ -z "$PEER0_LE" ]; then
+    echo -e "${RED}ERROR: peer0.lawenforcement.hot.coc.com is NOT running!${NC}"
+    echo "Container logs:"
+    docker logs peer0.lawenforcement.hot.coc.com 2>&1 | tail -20
+    exit 1
+fi
+
+if [ -z "$PEER0_FL" ]; then
+    echo -e "${RED}ERROR: peer0.forensiclab.hot.coc.com is NOT running!${NC}"
+    echo "Container logs:"
+    docker logs peer0.forensiclab.hot.coc.com 2>&1 | tail -20
+    exit 1
+fi
+
+echo "✓ All peer containers are running"
 
 # Copy to CLI
 docker cp hot-blockchain/channel-artifacts/hotchannel.block cli:/opt/gopath/src/github.com/hyperledger/fabric/peer/
