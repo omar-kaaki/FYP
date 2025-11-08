@@ -79,7 +79,8 @@ echo ""
 
 # Load MySQL schema
 echo -e "${YELLOW}[7/12] Loading MySQL schema...${NC}"
-docker exec -i mysql-coc mysql -ucocuser -pcocpassword coc_evidence < shared/database/init/01-schema.sql
+# Use root to load schema (needed for GRANT statements)
+docker exec -i mysql-coc mysql -uroot -prootpassword coc_evidence < shared/database/init/01-schema.sql 2>&1 | grep -v "Warning: Using a password" || true
 echo -e "${GREEN}✓ MySQL schema loaded${NC}"
 echo ""
 

@@ -69,9 +69,10 @@ echo ""
 
 # 6. Reload MySQL schema
 echo -e "${YELLOW}[6/8] Reloading MySQL schema...${NC}"
-docker exec mysql-coc mysql -ucocuser -pcocpassword coc_evidence < shared/database/init/01-schema.sql 2>/dev/null || {
+# Use root to load schema (needed for GRANT statements)
+docker exec -i mysql-coc mysql -uroot -prootpassword coc_evidence < shared/database/init/01-schema.sql 2>&1 | grep -v "Warning: Using a password" || {
     echo -e "${YELLOW}  Schema reload from file failed, creating manually...${NC}"
-    docker exec -i mysql-coc mysql -ucocuser -pcocpassword coc_evidence <<'EOF'
+    docker exec -i mysql-coc mysql -uroot -prootpassword coc_evidence <<'EOF'
 CREATE TABLE IF NOT EXISTS evidence_metadata (
     evidence_id VARCHAR(64) PRIMARY KEY,
     case_id VARCHAR(64) NOT NULL,
