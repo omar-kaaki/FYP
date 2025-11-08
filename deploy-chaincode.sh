@@ -17,7 +17,7 @@ NC='\033[0m'
 # Chaincode configuration
 CC_NAME="dfir"
 CC_VERSION="1.0"
-CC_SEQUENCE=1
+CC_SEQUENCE=2
 CC_SRC_PATH="github.com/chaincode"
 
 # Set environment
