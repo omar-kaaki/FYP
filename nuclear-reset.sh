@@ -72,6 +72,11 @@ echo ""
 echo -e "${YELLOW}[4/15] Generating NEW Hot blockchain crypto...${NC}"
 cd hot-blockchain
 cryptogen generate --config=./crypto-config.yaml --output="./crypto-config"
+
+# Copy core.yaml to each peer directory
+cp ../config/core.yaml ./crypto-config/peerOrganizations/lawenforcement.hot.coc.com/peers/peer0.lawenforcement.hot.coc.com/
+cp ../config/core.yaml ./crypto-config/peerOrganizations/forensiclab.hot.coc.com/peers/peer0.forensiclab.hot.coc.com/
+
 cd ..
 echo -e "${GREEN}✓ Hot crypto generated${NC}"
 echo ""
@@ -80,6 +85,10 @@ echo ""
 echo -e "${YELLOW}[5/15] Generating NEW Cold blockchain crypto...${NC}"
 cd cold-blockchain
 cryptogen generate --config=./crypto-config.yaml --output="./crypto-config"
+
+# Copy core.yaml to peer directory
+cp ../config/core.yaml ./crypto-config/peerOrganizations/archive.cold.coc.com/peers/peer0.archive.cold.coc.com/
+
 cd ..
 echo -e "${GREEN}✓ Cold crypto generated${NC}"
 echo ""
