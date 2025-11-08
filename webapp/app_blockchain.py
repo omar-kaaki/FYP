@@ -423,6 +423,143 @@ def ipfs_files():
     except Exception as e:
         return jsonify({"error": str(e)}), 500
 
+@app.route('/api/cases/list')
+def list_cases():
+    """List all cases"""
+    try:
+        db = get_db()
+        if not db:
+            return jsonify([])
+
+        cursor = db.cursor(dictionary=True)
+        cursor.execute("""
+            SELECT
+                c.*,
+                COUNT(DISTINCT e.evidence_id) as evidence_count
+            FROM cases c
+            LEFT JOIN evidence_metadata e ON c.case_id = e.case_id
+            GROUP BY c.case_id
+            ORDER BY c.created_at DESC
+        """)
+        cases = cursor.fetchall()
+
+        # Convert date objects to strings
+        for case in cases:
+            if case.get('opened_date'):
+                case['opened_date'] = str(case['opened_date'])
+            if case.get('closed_date'):
+                case['closed_date'] = str(case['closed_date'])
+            if case.get('created_at'):
+                case['created_at'] = str(case['created_at'])
+            if case.get('updated_at'):
+                case['updated_at'] = str(case['updated_at'])
+
+        cursor.close()
+        db.close()
+        return jsonify(cases)
+    except Exception as e:
+        print(f"List cases error: {e}")
+        return jsonify([])
+
+@app.route('/api/cases/create', methods=['POST'])
+def create_case():
+    """Create a new case"""
+    try:
+        data = request.json
+
+        # Validate required fields
+        required = ['case_id', 'case_name', 'case_number', 'investigating_agency', 'lead_investigator', 'opened_date']
+        if not all(k in data for k in required):
+            return jsonify({"error": "Missing required fields"}), 400
+
+        db = get_db()
+        if not db:
+            return jsonify({"error": "Database connection failed"}), 500
+
+        cursor = db.cursor()
+        cursor.execute("""
+            INSERT INTO cases
+            (case_id, case_name, case_number, case_type, investigating_agency,
+             lead_investigator, status, opened_date, description)
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+        """, (
+            data['case_id'],
+            data['case_name'],
+            data['case_number'],
+            data.get('case_type', 'Digital Forensics'),
+            data['investigating_agency'],
+            data['lead_investigator'],
+            data.get('status', 'open'),
+            data['opened_date'],
+            data.get('description', '')
+        ))
+
+        db.commit()
+        cursor.close()
+        db.close()
+
+        return jsonify({"success": True, "case_id": data['case_id']})
+    except mysql.connector.errors.IntegrityError as e:
+        return jsonify({"error": "Case ID or case number already exists"}), 400
+    except Exception as e:
+        print(f"Create case error: {e}")
+        return jsonify({"error": str(e)}), 500
+
+@app.route('/api/cases/<case_id>')
+def get_case(case_id):
+    """Get case details with evidence list"""
+    try:
+        db = get_db()
+        if not db:
+            return jsonify({"error": "Database connection failed"}), 404
+
+        cursor = db.cursor(dictionary=True)
+
+        # Get case details
+        cursor.execute("SELECT * FROM cases WHERE case_id = %s", (case_id,))
+        case = cursor.fetchone()
+
+        if not case:
+            cursor.close()
+            db.close()
+            return jsonify({"error": "Case not found"}), 404
+
+        # Get evidence for this case
+        cursor.execute("""
+            SELECT * FROM evidence_metadata
+            WHERE case_id = %s
+            ORDER BY collected_timestamp DESC
+        """, (case_id,))
+        evidence = cursor.fetchall()
+
+        # Convert date/timestamp objects to strings
+        if case.get('opened_date'):
+            case['opened_date'] = str(case['opened_date'])
+        if case.get('closed_date'):
+            case['closed_date'] = str(case['closed_date'])
+        if case.get('created_at'):
+            case['created_at'] = str(case['created_at'])
+        if case.get('updated_at'):
+            case['updated_at'] = str(case['updated_at'])
+
+        for e in evidence:
+            if e.get('collected_timestamp'):
+                e['collected_timestamp'] = str(e['collected_timestamp'])
+            if e.get('created_at'):
+                e['created_at'] = str(e['created_at'])
+            if e.get('updated_at'):
+                e['updated_at'] = str(e['updated_at'])
+
+        case['evidence'] = evidence
+        case['evidence_count'] = len(evidence)
+
+        cursor.close()
+        db.close()
+        return jsonify(case)
+    except Exception as e:
+        print(f"Get case error: {e}")
+        return jsonify({"error": str(e)}), 500
+
 @app.route('/health')
 def health():
     """Health check endpoint"""
