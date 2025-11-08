@@ -156,12 +156,15 @@ def create_evidence():
                     # Parse metadata
                     metadata = json.loads(data.get('metadata', '{}'))
 
+                    # Convert channel name to blockchain_type enum value
+                    blockchain_type = 'cold' if channel == 'coldchannel' else 'hot'
+
                     # Insert into MySQL
                     cursor.execute("""
                         INSERT INTO evidence_metadata
-                        (evidence_id, case_id, evidence_type, description, file_hash,
-                         ipfs_hash, collected_by, blockchain, collected_timestamp)
-                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)
+                        (evidence_id, case_id, evidence_type, description, sha256_hash,
+                         ipfs_hash, collected_by, blockchain_type, collected_timestamp, location)
+                        VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
                     """, (
                         data['id'],
                         data['case_id'],
@@ -170,8 +173,9 @@ def create_evidence():
                         data['hash'],
                         data['location'].replace('ipfs://', ''),
                         metadata.get('collected_by', 'Unknown'),
-                        channel,
-                        metadata.get('timestamp', datetime.now().isoformat())
+                        blockchain_type,
+                        metadata.get('timestamp', datetime.now().isoformat()),
+                        metadata.get('location', 'Unknown')
                     ))
 
                     db.commit()
