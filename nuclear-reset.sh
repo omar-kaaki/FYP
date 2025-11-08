@@ -91,10 +91,10 @@ configtxgen -profile HotChainGenesis -channelID system-channel -outputBlock ./ho
 echo -e "${GREEN}✓ Hot genesis block created${NC}"
 echo ""
 
-# 7. Generate Hot channel transaction
-echo -e "${YELLOW}[7/15] Generating Hot channel config...${NC}"
-configtxgen -profile HotChainChannel -outputCreateChannelTx ./hot-blockchain/channel-artifacts/hotchannel.tx -channelID hotchannel
-echo -e "${GREEN}✓ Hot channel config created${NC}"
+# 7. Generate Hot channel block
+echo -e "${YELLOW}[7/15] Generating Hot channel block...${NC}"
+configtxgen -profile HotChainChannel -outputBlock ./hot-blockchain/channel-artifacts/hotchannel.block -channelID hotchannel
+echo -e "${GREEN}✓ Hot channel block created${NC}"
 echo ""
 
 # 8. Generate Cold genesis block
@@ -104,10 +104,10 @@ configtxgen -profile ColdChainGenesis -channelID system-channel -outputBlock ./c
 echo -e "${GREEN}✓ Cold genesis block created${NC}"
 echo ""
 
-# 9. Generate Cold channel transaction
-echo -e "${YELLOW}[9/15] Generating Cold channel config...${NC}"
-configtxgen -profile ColdChainChannel -outputCreateChannelTx ./cold-blockchain/channel-artifacts/coldchannel.tx -channelID coldchannel
-echo -e "${GREEN}✓ Cold channel config created${NC}"
+# 9. Generate Cold channel block
+echo -e "${YELLOW}[9/15] Generating Cold channel block...${NC}"
+configtxgen -profile ColdChainChannel -outputBlock ./cold-blockchain/channel-artifacts/coldchannel.block -channelID coldchannel
+echo -e "${GREEN}✓ Cold channel block created${NC}"
 echo ""
 
 # 10. Start Hot blockchain
@@ -127,10 +127,8 @@ sleep 15
 echo -e "${GREEN}✓ Cold blockchain started${NC}"
 echo ""
 
-# 12. Create Hot channel with NEW configtxgen method
-echo -e "${YELLOW}[12/15] Creating Hot channel (Fabric 2.5 style)...${NC}"
-export FABRIC_CFG_PATH="$PROJECT_ROOT/hot-blockchain"
-configtxgen -profile HotChainChannel -outputBlock ./hot-blockchain/channel-artifacts/hotchannel.block -channelID hotchannel
+# 12. Join Hot channel peers (Fabric 2.5 style)
+echo -e "${YELLOW}[12/15] Joining Hot channel peers...${NC}"
 
 # Copy to CLI
 docker cp hot-blockchain/channel-artifacts/hotchannel.block cli:/opt/gopath/src/github.com/hyperledger/fabric/peer/
@@ -149,10 +147,8 @@ peer channel join -b /opt/gopath/src/github.com/hyperledger/fabric/peer/hotchann
 echo -e "${GREEN}✓ Hot channel created${NC}"
 echo ""
 
-# 13. Create Cold channel
-echo -e "${YELLOW}[13/15] Creating Cold channel (Fabric 2.5 style)...${NC}"
-export FABRIC_CFG_PATH="$PROJECT_ROOT/cold-blockchain"
-configtxgen -profile ColdChainChannel -outputBlock ./cold-blockchain/channel-artifacts/coldchannel.block -channelID coldchannel
+# 13. Join Cold channel peers
+echo -e "${YELLOW}[13/15] Joining Cold channel peers...${NC}"
 
 docker cp cold-blockchain/channel-artifacts/coldchannel.block cli-cold:/opt/gopath/src/github.com/hyperledger/fabric/peer/
 docker exec cli-cold peer channel join -b /opt/gopath/src/github.com/hyperledger/fabric/peer/coldchannel.block
