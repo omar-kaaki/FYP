@@ -129,6 +129,8 @@ echo ""
 
 # 12. Join Hot channel peers (Fabric 2.5 style)
 echo -e "${YELLOW}[12/15] Joining Hot channel peers...${NC}"
+echo "Waiting 15 seconds for peer network services to fully initialize..."
+sleep 15
 
 # Copy to CLI
 docker cp hot-blockchain/channel-artifacts/hotchannel.block cli:/opt/gopath/src/github.com/hyperledger/fabric/peer/
