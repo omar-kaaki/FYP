@@ -101,67 +101,40 @@ echo -e "${GREEN}✓ Cold blockchain started${NC}"
 echo ""
 
 # Create and join Hot channel
-echo -e "${YELLOW}[10/12] Creating Hot channel...${NC}"
+echo -e "${YELLOW}[10/12] Joining peers to Hot channel...${NC}"
 
-# Create channel genesis block using configtxgen (already exists from startup)
-# Just use the existing channel artifacts
-docker run --rm \
-    -v "$PROJECT_ROOT/hot-blockchain:/work" \
-    -e FABRIC_CFG_PATH=/work \
-    -w /work \
-    hyperledger/fabric-tools:2.5 \
-    configtxgen -profile HotChainChannel -outputBlock /work/channel-artifacts/hotchannel.block -channelID hotchannel
+# Use the pre-existing channel block files (created during initial setup)
+# Copy channel block to CLI container
+docker cp hot-blockchain/channel-artifacts/hotchannel.block cli:/opt/gopath/src/github.com/hyperledger/fabric/peer/hotchannel.block
 
-# Join orderer to channel using osnadmin (Fabric 2.3+ channel participation API)
-docker exec cli osnadmin channel join \
-    --channelID hotchannel \
-    --config-block /opt/gopath/src/github.com/hyperledger/fabric/peer/channel-artifacts/hotchannel.block \
-    -o orderer.hot.coc.com:7053 \
-    --ca-file /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/hot.coc.com/users/Admin@hot.coc.com/tls/ca.crt \
-    --client-cert /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/hot.coc.com/users/Admin@hot.coc.com/tls/client.crt \
-    --client-key /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/hot.coc.com/users/Admin@hot.coc.com/tls/client.key
-
-sleep 3
+sleep 2
 
 # Join LawEnforcement peer
-docker exec cli peer channel join -b /opt/gopath/src/github.com/hyperledger/fabric/peer/channel-artifacts/hotchannel.block
+docker exec cli peer channel join -b hotchannel.block
 
 # Join ForensicLab peer
 docker exec -e CORE_PEER_ADDRESS=peer0.forensiclab.hot.coc.com:8051 \
     -e CORE_PEER_LOCALMSPID=ForensicLabMSP \
     -e CORE_PEER_TLS_ROOTCERT_FILE=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/forensiclab.hot.coc.com/peers/peer0.forensiclab.hot.coc.com/tls/ca.crt \
     -e CORE_PEER_MSPCONFIGPATH=/opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/forensiclab.hot.coc.com/users/Admin@forensiclab.hot.coc.com/msp \
-    cli peer channel join -b /opt/gopath/src/github.com/hyperledger/fabric/peer/channel-artifacts/hotchannel.block
+    cli peer channel join -b hotchannel.block
 
-echo -e "${GREEN}✓ Hot channel created and peers joined${NC}"
+echo -e "${GREEN}✓ Hot channel peers joined${NC}"
 echo ""
 
 # Create and join Cold channel
-echo -e "${YELLOW}[11/12] Creating Cold channel...${NC}"
+echo -e "${YELLOW}[11/12] Joining peer to Cold channel...${NC}"
 
-# Create channel genesis block using configtxgen
-docker run --rm \
-    -v "$PROJECT_ROOT/cold-blockchain:/work" \
-    -e FABRIC_CFG_PATH=/work \
-    -w /work \
-    hyperledger/fabric-tools:2.5 \
-    configtxgen -profile ColdChainChannel -outputBlock /work/channel-artifacts/coldchannel.block -channelID coldchannel
+# Use the pre-existing channel block files (created during initial setup)
+# Copy channel block to CLI container
+docker cp cold-blockchain/channel-artifacts/coldchannel.block cli-cold:/opt/gopath/src/github.com/hyperledger/fabric/peer/coldchannel.block
 
-# Join orderer to channel using osnadmin (Fabric 2.3+ channel participation API)
-docker exec cli-cold osnadmin channel join \
-    --channelID coldchannel \
-    --config-block /opt/gopath/src/github.com/hyperledger/fabric/peer/channel-artifacts/coldchannel.block \
-    -o orderer.cold.coc.com:7153 \
-    --ca-file /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/cold.coc.com/users/Admin@cold.coc.com/tls/ca.crt \
-    --client-cert /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/cold.coc.com/users/Admin@cold.coc.com/tls/client.crt \
-    --client-key /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/cold.coc.com/users/Admin@cold.coc.com/tls/client.key
-
-sleep 3
+sleep 2
 
 # Join Archive peer
-docker exec cli-cold peer channel join -b /opt/gopath/src/github.com/hyperledger/fabric/peer/channel-artifacts/coldchannel.block
+docker exec cli-cold peer channel join -b coldchannel.block
 
-echo -e "${GREEN}✓ Cold channel created and peer joined${NC}"
+echo -e "${GREEN}✓ Cold channel peer joined${NC}"
 echo ""
 
 # Check blockchain heights
