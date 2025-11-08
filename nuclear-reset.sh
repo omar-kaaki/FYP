@@ -129,22 +129,23 @@ echo ""
 
 # 12. Join Hot channel peers (Fabric 2.5 style)
 echo -e "${YELLOW}[12/15] Joining Hot channel peers...${NC}"
-echo "Waiting for peer network services to fully initialize..."
 
-# Wait for peers to be resolvable (retry up to 30 seconds)
-for i in {1..6}; do
-    if docker exec cli getent hosts peer0.lawenforcement.hot.coc.com > /dev/null 2>&1; then
-        echo "✓ Peers are resolvable"
-        break
-    fi
-    echo "  Waiting for DNS... (attempt $i/6)"
-    sleep 5
-done
+# Verify containers are running
+echo "Checking container status..."
+docker ps --filter "name=peer0.lawenforcement.hot.coc.com" --format "{{.Names}}: {{.Status}}"
+docker ps --filter "name=peer0.forensiclab.hot.coc.com" --format "{{.Names}}: {{.Status}}"
+docker ps --filter "name=cli" --format "{{.Names}}: {{.Status}}"
+
+# Check network connectivity
+echo "Testing network connectivity..."
+docker exec cli sh -c 'nc -zv peer0.lawenforcement.hot.coc.com 7051 2>&1 || echo "Cannot reach peer0.lawenforcement.hot.coc.com:7051"'
+docker exec cli sh -c 'nc -zv peer0.forensiclab.hot.coc.com 8051 2>&1 || echo "Cannot reach peer0.forensiclab.hot.coc.com:8051"'
 
 # Copy to CLI
 docker cp hot-blockchain/channel-artifacts/hotchannel.block cli:/opt/gopath/src/github.com/hyperledger/fabric/peer/
 
-# Join peers (orderers will auto-discover from the block)
+# Join peer0.lawenforcement
+echo "Joining peer0.lawenforcement to hotchannel..."
 docker exec cli peer channel join -b /opt/gopath/src/github.com/hyperledger/fabric/peer/hotchannel.block
 
 docker exec cli bash -c '
