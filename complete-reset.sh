@@ -103,15 +103,11 @@ echo ""
 # Create and join Hot channel
 echo -e "${YELLOW}[10/12] Creating Hot channel...${NC}"
 
-# Use configtxgen to create channel genesis block (Fabric 2.3+ method)
-export FABRIC_CFG_PATH="$PROJECT_ROOT/hot-blockchain"
-docker run --rm -v "$PROJECT_ROOT/hot-blockchain:/work" \
-    -w /work \
-    hyperledger/fabric-tools:2.5 \
-    configtxgen -profile HotChainChannel -outputCreateChannelTx /work/channel-artifacts/hotchannel.tx -channelID hotchannel
-
-# Create genesis block for the channel
-docker run --rm -v "$PROJECT_ROOT/hot-blockchain:/work" \
+# Create channel genesis block using configtxgen (already exists from startup)
+# Just use the existing channel artifacts
+docker run --rm \
+    -v "$PROJECT_ROOT/hot-blockchain:/work" \
+    -e FABRIC_CFG_PATH=/work \
     -w /work \
     hyperledger/fabric-tools:2.5 \
     configtxgen -profile HotChainChannel -outputBlock /work/channel-artifacts/hotchannel.block -channelID hotchannel
@@ -143,15 +139,10 @@ echo ""
 # Create and join Cold channel
 echo -e "${YELLOW}[11/12] Creating Cold channel...${NC}"
 
-# Use configtxgen to create channel genesis block (Fabric 2.3+ method)
-export FABRIC_CFG_PATH="$PROJECT_ROOT/cold-blockchain"
-docker run --rm -v "$PROJECT_ROOT/cold-blockchain:/work" \
-    -w /work \
-    hyperledger/fabric-tools:2.5 \
-    configtxgen -profile ColdChainChannel -outputCreateChannelTx /work/channel-artifacts/coldchannel.tx -channelID coldchannel
-
-# Create genesis block for the channel
-docker run --rm -v "$PROJECT_ROOT/cold-blockchain:/work" \
+# Create channel genesis block using configtxgen
+docker run --rm \
+    -v "$PROJECT_ROOT/cold-blockchain:/work" \
+    -e FABRIC_CFG_PATH=/work \
     -w /work \
     hyperledger/fabric-tools:2.5 \
     configtxgen -profile ColdChainChannel -outputBlock /work/channel-artifacts/coldchannel.block -channelID coldchannel
