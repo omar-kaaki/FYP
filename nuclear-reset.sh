@@ -129,8 +129,17 @@ echo ""
 
 # 12. Join Hot channel peers (Fabric 2.5 style)
 echo -e "${YELLOW}[12/15] Joining Hot channel peers...${NC}"
-echo "Waiting 15 seconds for peer network services to fully initialize..."
-sleep 15
+echo "Waiting for peer network services to fully initialize..."
+
+# Wait for peers to be resolvable (retry up to 30 seconds)
+for i in {1..6}; do
+    if docker exec cli getent hosts peer0.lawenforcement.hot.coc.com > /dev/null 2>&1; then
+        echo "✓ Peers are resolvable"
+        break
+    fi
+    echo "  Waiting for DNS... (attempt $i/6)"
+    sleep 5
+done
 
 # Copy to CLI
 docker cp hot-blockchain/channel-artifacts/hotchannel.block cli:/opt/gopath/src/github.com/hyperledger/fabric/peer/
