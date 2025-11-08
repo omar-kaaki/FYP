@@ -131,11 +131,20 @@ def create_evidence():
 
         # Parse metadata to get timestamp
         metadata = json.loads(data.get('metadata', '{}'))
-        timestamp = metadata.get('timestamp', datetime.now().isoformat())
+        timestamp_str = metadata.get('timestamp', datetime.now().isoformat())
 
         # Convert ISO timestamp to Unix timestamp (int64)
-        from dateutil import parser
-        timestamp_unix = int(parser.parse(timestamp).timestamp())
+        try:
+            # Parse ISO format: 2025-11-08T22:48:52.778Z
+            if timestamp_str.endswith('Z'):
+                timestamp_str = timestamp_str[:-1]
+                timestamp_dt = datetime.fromisoformat(timestamp_str)
+            else:
+                timestamp_dt = datetime.fromisoformat(timestamp_str)
+            timestamp_unix = int(timestamp_dt.timestamp())
+        except:
+            # Fallback to current time if parsing fails
+            timestamp_unix = int(datetime.now().timestamp())
 
         # Create evidence on blockchain
         result = exec_chaincode(
