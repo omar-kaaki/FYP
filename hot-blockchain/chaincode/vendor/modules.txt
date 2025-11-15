@@ -67,6 +67,8 @@ github.com/mailru/easyjson/jwriter
 github.com/rogpeppe/go-internal/modfile
 github.com/rogpeppe/go-internal/module
 github.com/rogpeppe/go-internal/semver
+# github.com/stretchr/testify v1.11.1
+## explicit; go 1.17
 # github.com/xeipuuv/gojsonpointer v0.0.0-20190905194746-02993c407bfb
 ## explicit
 github.com/xeipuuv/gojsonpointer
