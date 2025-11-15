@@ -202,7 +202,5 @@ Profiles:
       Organizations:
         - *LawEnforcement
         - *ForensicLab
-        - *Court
-        - *Auditor
       Capabilities:
         <<: *ApplicationCapabilities

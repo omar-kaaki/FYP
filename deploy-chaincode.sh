@@ -119,6 +119,16 @@ docker exec \
     --sequence ${CC_SEQUENCE}
 check_result "Approved for Forensic Lab"
 
+# Check commit readiness
+echo "Checking commit readiness..."
+docker exec cli peer lifecycle chaincode checkcommitreadiness \
+    --channelID hotchannel \
+    --name ${CC_NAME} \
+    --version ${CC_VERSION} \
+    --sequence ${CC_SEQUENCE} \
+    --tls --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/hot.coc.com/orderers/orderer.hot.coc.com/msp/tlscacerts/tlsca.hot.coc.com-cert.pem \
+    --output json
+
 # Step 8: Commit chaincode to Hot blockchain channel
 print_step "Committing chaincode to Hot blockchain..."
 docker exec cli peer lifecycle chaincode commit \
@@ -132,7 +142,8 @@ docker exec cli peer lifecycle chaincode commit \
     --peerAddresses peer0.lawenforcement.hot.coc.com:7051 \
     --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/lawenforcement.hot.coc.com/peers/peer0.lawenforcement.hot.coc.com/tls/ca.crt \
     --peerAddresses peer0.forensiclab.hot.coc.com:8051 \
-    --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/forensiclab.hot.coc.com/peers/peer0.forensiclab.hot.coc.com/tls/ca.crt
+    --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/forensiclab.hot.coc.com/peers/peer0.forensiclab.hot.coc.com/tls/ca.crt \
+    --waitForEvent
 check_result "Committed to Hot blockchain"
 
 # Step 9: Deploy to Cold Blockchain
@@ -168,6 +179,16 @@ docker exec cli-cold peer lifecycle chaincode approveformyorg \
     --sequence ${CC_SEQUENCE}
 check_result "Approved for Auditor organization"
 
+# Check commit readiness for cold blockchain
+echo "Checking cold blockchain commit readiness..."
+docker exec cli-cold peer lifecycle chaincode checkcommitreadiness \
+    --channelID coldchannel \
+    --name ${CC_NAME} \
+    --version ${CC_VERSION} \
+    --sequence ${CC_SEQUENCE} \
+    --tls --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/cold.coc.com/orderers/orderer.cold.coc.com/msp/tlscacerts/tlsca.cold.coc.com-cert.pem \
+    --output json
+
 # Commit to cold blockchain channel
 docker exec cli-cold peer lifecycle chaincode commit \
     -o orderer.cold.coc.com:7150 \
@@ -178,7 +199,8 @@ docker exec cli-cold peer lifecycle chaincode commit \
     --version ${CC_VERSION} \
     --sequence ${CC_SEQUENCE} \
     --peerAddresses peer0.auditor.cold.coc.com:9051 \
-    --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/auditor.cold.coc.com/peers/peer0.auditor.cold.coc.com/tls/ca.crt
+    --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/auditor.cold.coc.com/peers/peer0.auditor.cold.coc.com/tls/ca.crt \
+    --waitForEvent
 check_result "Committed to Cold blockchain"
 
 # Step 10: Initialize chaincode with PRV configuration
