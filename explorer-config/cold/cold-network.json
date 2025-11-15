@@ -8,7 +8,7 @@
       "password": "exploreradminpw"
     },
     "enableAuthentication": true,
-    "organization": "ArchiveMSP",
+    "organization": "AuditorMSP",
     "connection": {
       "timeout": {
         "peer": {
@@ -21,30 +21,30 @@
   "channels": {
     "coldchannel": {
       "peers": {
-        "peer0.archive.cold.coc.com": {}
+        "peer0.auditor.cold.coc.com": {}
       }
     }
   },
   "organizations": {
-    "ArchiveMSP": {
-      "mspid": "ArchiveMSP",
+    "AuditorMSP": {
+      "mspid": "AuditorMSP",
       "adminPrivateKey": {
-        "path": "/tmp/crypto/peerOrganizations/archive.cold.coc.com/users/Admin@archive.cold.coc.com/msp/keystore/priv_sk"
+        "path": "/tmp/crypto/peerOrganizations/auditor.cold.coc.com/users/Admin@auditor.cold.coc.com/msp/keystore/priv_sk"
       },
-      "peers": ["peer0.archive.cold.coc.com"],
+      "peers": ["peer0.auditor.cold.coc.com"],
       "signedCert": {
-        "path": "/tmp/crypto/peerOrganizations/archive.cold.coc.com/users/Admin@archive.cold.coc.com/msp/signcerts/Admin@archive.cold.coc.com-cert.pem"
+        "path": "/tmp/crypto/peerOrganizations/auditor.cold.coc.com/users/Admin@auditor.cold.coc.com/msp/signcerts/Admin@auditor.cold.coc.com-cert.pem"
       }
     }
   },
   "peers": {
-    "peer0.archive.cold.coc.com": {
+    "peer0.auditor.cold.coc.com": {
       "tlsCACerts": {
-        "path": "/tmp/crypto/peerOrganizations/archive.cold.coc.com/peers/peer0.archive.cold.coc.com/tls/ca.crt"
+        "path": "/tmp/crypto/peerOrganizations/auditor.cold.coc.com/peers/peer0.auditor.cold.coc.com/tls/ca.crt"
       },
-      "url": "grpcs://peer0.archive.cold.coc.com:9051",
+      "url": "grpcs://peer0.auditor.cold.coc.com:9051",
       "grpcOptions": {
-        "ssl-target-name-override": "peer0.archive.cold.coc.com"
+        "ssl-target-name-override": "peer0.auditor.cold.coc.com"
       }
     }
   }

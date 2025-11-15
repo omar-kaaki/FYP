@@ -87,7 +87,7 @@ cd cold-blockchain
 cryptogen generate --config=./crypto-config.yaml --output="./crypto-config"
 
 # Copy core.yaml to peer directory
-cp ../config/core.yaml ./crypto-config/peerOrganizations/archive.cold.coc.com/peers/peer0.archive.cold.coc.com/
+cp ../config/core.yaml ./crypto-config/peerOrganizations/auditor.cold.coc.com/peers/peer0.auditor.cold.coc.com/
 
 cd ..
 echo -e "${GREEN}✓ Cold crypto generated${NC}"

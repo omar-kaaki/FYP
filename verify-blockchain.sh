@@ -83,7 +83,7 @@ else
 fi
 
 print_test "Cold Archive peer is running"
-if docker ps --format '{{.Names}}' | grep -q "^peer0.archive.cold.coc.com$"; then
+if docker ps --format '{{.Names}}' | grep -q "^peer0.auditor.cold.coc.com$"; then
     pass_test
 else
     fail_test

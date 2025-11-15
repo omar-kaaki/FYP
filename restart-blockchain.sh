@@ -40,7 +40,7 @@ SOURCE_CORE="fabric-samples/test-network/compose/docker/peercfg/core.yaml"
 if [ -f "$SOURCE_CORE" ]; then
     cp "$SOURCE_CORE" hot-blockchain/crypto-config/peerOrganizations/lawenforcement.hot.coc.com/peers/peer0.lawenforcement.hot.coc.com/ 2>/dev/null
     cp "$SOURCE_CORE" hot-blockchain/crypto-config/peerOrganizations/forensiclab.hot.coc.com/peers/peer0.forensiclab.hot.coc.com/ 2>/dev/null
-    cp "$SOURCE_CORE" cold-blockchain/crypto-config/peerOrganizations/archive.cold.coc.com/peers/peer0.archive.cold.coc.com/ 2>/dev/null
+    cp "$SOURCE_CORE" cold-blockchain/crypto-config/peerOrganizations/auditor.cold.coc.com/peers/peer0.auditor.cold.coc.com/ 2>/dev/null
     echo "✓ core.yaml files copied"
 else
     echo "⚠️  Warning: core.yaml not found, peers may fail to start"

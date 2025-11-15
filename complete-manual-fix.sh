@@ -233,24 +233,24 @@ Organizations:
         - orderer.cold.coc.com:7150
 
   - &Archive
-      Name: ArchiveMSP
-      ID: ArchiveMSP
-      MSPDir: crypto-config/peerOrganizations/archive.cold.coc.com/msp
+      Name: AuditorMSP
+      ID: AuditorMSP
+      MSPDir: crypto-config/peerOrganizations/auditor.cold.coc.com/msp
       Policies:
         Readers:
           Type: Signature
-          Rule: "OR('ArchiveMSP.admin', 'ArchiveMSP.peer', 'ArchiveMSP.client')"
+          Rule: "OR('AuditorMSP.admin', 'AuditorMSP.peer', 'AuditorMSP.client')"
         Writers:
           Type: Signature
-          Rule: "OR('ArchiveMSP.admin', 'ArchiveMSP.client')"
+          Rule: "OR('AuditorMSP.admin', 'AuditorMSP.client')"
         Admins:
           Type: Signature
-          Rule: "OR('ArchiveMSP.admin')"
+          Rule: "OR('AuditorMSP.admin')"
         Endorsement:
           Type: Signature
-          Rule: "OR('ArchiveMSP.peer')"
+          Rule: "OR('AuditorMSP.peer')"
       AnchorPeers:
-        - Host: peer0.archive.cold.coc.com
+        - Host: peer0.auditor.cold.coc.com
           Port: 9051
 
 Capabilities:

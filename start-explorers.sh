@@ -12,7 +12,7 @@ if ! docker ps | grep -q "peer0.lawenforcement.hot.coc.com"; then
     exit 1
 fi
 
-if ! docker ps | grep -q "peer0.archive.cold.coc.com"; then
+if ! docker ps | grep -q "peer0.auditor.cold.coc.com"; then
     echo "❌ Error: Cold blockchain is not running!"
     echo "   Please run ./restart-blockchain.sh first"
     exit 1

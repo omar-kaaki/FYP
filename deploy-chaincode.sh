@@ -45,7 +45,7 @@ check_result() {
 
 # Step 1: Check containers
 print_step "Checking blockchain containers..."
-for container in cli cli-cold peer0.lawenforcement.hot.coc.com peer0.forensiclab.hot.coc.com peer0.archive.cold.coc.com; do
+for container in cli cli-cold peer0.lawenforcement.hot.coc.com peer0.forensiclab.hot.coc.com peer0.auditor.cold.coc.com; do
     if docker ps --format '{{.Names}}' | grep -q "^${container}$"; then
         echo "✓ Container $container is running"
     else
@@ -144,9 +144,9 @@ docker exec cli-cold peer lifecycle chaincode package dfir.tar.gz \
     --lang golang \
     --label dfir_${CC_VERSION}
 
-# Install on Archive peer
+# Install on Auditor peer
 docker exec cli-cold peer lifecycle chaincode install dfir.tar.gz
-check_result "Installed on Archive peer"
+check_result "Installed on Auditor peer"
 
 # Query package ID for cold blockchain
 PACKAGE_ID_COLD=$(docker exec cli-cold peer lifecycle chaincode queryinstalled 2>/dev/null | grep "dfir_${CC_VERSION}" | awk '{print $3}' | sed 's/,$//')
@@ -156,7 +156,7 @@ if [ -z "$PACKAGE_ID_COLD" ]; then
 fi
 echo "Cold Package ID: $PACKAGE_ID_COLD"
 
-# Approve for Archive organization
+# Approve for Auditor organization
 docker exec cli-cold peer lifecycle chaincode approveformyorg \
     -o orderer.cold.coc.com:7150 \
     --ordererTLSHostnameOverride orderer.cold.coc.com \
@@ -166,7 +166,7 @@ docker exec cli-cold peer lifecycle chaincode approveformyorg \
     --version ${CC_VERSION} \
     --package-id ${PACKAGE_ID_COLD} \
     --sequence ${CC_SEQUENCE}
-check_result "Approved for Archive organization"
+check_result "Approved for Auditor organization"
 
 # Commit to cold blockchain channel
 docker exec cli-cold peer lifecycle chaincode commit \
@@ -177,8 +177,8 @@ docker exec cli-cold peer lifecycle chaincode commit \
     --name ${CC_NAME} \
     --version ${CC_VERSION} \
     --sequence ${CC_SEQUENCE} \
-    --peerAddresses peer0.archive.cold.coc.com:9051 \
-    --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/archive.cold.coc.com/peers/peer0.archive.cold.coc.com/tls/ca.crt
+    --peerAddresses peer0.auditor.cold.coc.com:9051 \
+    --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/auditor.cold.coc.com/peers/peer0.auditor.cold.coc.com/tls/ca.crt
 check_result "Committed to Cold blockchain"
 
 # Step 10: Initialize chaincode with PRV configuration
@@ -207,8 +207,8 @@ docker exec cli-cold peer chaincode invoke \
     --tls --cafile /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/ordererOrganizations/cold.coc.com/orderers/orderer.cold.coc.com/msp/tlscacerts/tlsca.cold.coc.com-cert.pem \
     -C coldchannel \
     -n ${CC_NAME} \
-    --peerAddresses peer0.archive.cold.coc.com:9051 \
-    --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/archive.cold.coc.com/peers/peer0.archive.cold.coc.com/tls/ca.crt \
+    --peerAddresses peer0.auditor.cold.coc.com:9051 \
+    --tlsRootCertFiles /opt/gopath/src/github.com/hyperledger/fabric/peer/crypto/peerOrganizations/auditor.cold.coc.com/peers/peer0.auditor.cold.coc.com/tls/ca.crt \
     -c '{"function":"InitLedger","Args":["0000000000000000000000000000000000000000000000000000000000000000","0000000000000000000000000000000000000000000000000000000000000000","0000000000000000000000000000000000000000000000000000000000000000"]}' \
     2>&1
 check_result "Cold blockchain initialized"

@@ -42,7 +42,7 @@ else
 fi
 
 # Cold Blockchain - Archive Peer
-DEST3="cold-blockchain/crypto-config/peerOrganizations/archive.cold.coc.com/peers/peer0.archive.cold.coc.com/core.yaml"
+DEST3="cold-blockchain/crypto-config/peerOrganizations/auditor.cold.coc.com/peers/peer0.auditor.cold.coc.com/core.yaml"
 if [ -d "$(dirname "$DEST3")" ]; then
     cp "$SOURCE_CORE_YAML" "$DEST3"
     echo -e "${GREEN}✓${NC} Copied to Archive peer"

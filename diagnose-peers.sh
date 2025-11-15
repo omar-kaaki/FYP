@@ -43,7 +43,7 @@ echo "----------------------------------------"
 echo -e "${YELLOW}Cold Blockchain Peer:${NC}"
 echo "----------------------------------------"
 
-peer="peer0.archive.cold.coc.com"
+peer="peer0.auditor.cold.coc.com"
 echo ""
 echo "=== $peer ==="
 STATUS=$(docker inspect -f '{{.State.Status}}' $peer 2>/dev/null)
