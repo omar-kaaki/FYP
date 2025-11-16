@@ -2,14 +2,20 @@
 
 A dual-blockchain architecture for managing digital evidence chain of custody using Hyperledger Fabric, IPFS, and MySQL.
 
+## 🚀 Quick Links
+
+- **[⚡ Quick Start Guide](QUICKSTART.md)** - Get running in 10 minutes
+- **[📖 Complete Setup Guide](SETUP.md)** - Detailed installation and configuration
+- **[🔧 Troubleshooting](#troubleshooting)** - Common issues and solutions
+
+---
+
 ## 📋 Table of Contents
 
 - [Project Overview](#project-overview)
 - [System Architecture](#system-architecture)
 - [Features](#features)
-- [Prerequisites](#prerequisites)
-- [Installation & Setup](#installation--setup)
-- [Running the System](#running-the-system)
+- [Quick Start](#quick-start)
 - [Usage Guide](#usage-guide)
 - [API Documentation](#api-documentation)
 - [Troubleshooting](#troubleshooting)
@@ -34,7 +40,9 @@ A dual-blockchain architecture for managing digital evidence chain of custody us
 ✅ **Transparency** - Complete audit trail of custody transfers
 ✅ **Compliance** - Meets NIST, ISO/IEC 27037, and legal evidence standards
 ✅ **Scalability** - Handles large files (100MB - 5GB) via IPFS
-✅ **Multi-Organization** - Law Enforcement, Forensic Labs, Archive nodes
+✅ **Multi-Organization** - Law Enforcement, Forensic Labs, Court, Auditor
+✅ **Advanced RBAC** - Role-based access control with 4 roles and 50+ permission rules
+✅ **mTLS Security** - All communications encrypted with mutual TLS
 
 ---
 
@@ -104,6 +112,37 @@ A dual-blockchain architecture for managing digital evidence chain of custody us
 
 ---
 
+## ⚡ Quick Start
+
+### For New Users (Complete Setup)
+
+See **[SETUP.md](SETUP.md)** for complete installation including:
+- Installing Docker, Git, Python, Go
+- Cloning the repository
+- Deploying the blockchain
+- Testing the system
+
+### For Users with Prerequisites Installed
+
+See **[QUICKSTART.md](QUICKSTART.md)** for rapid deployment:
+
+```bash
+git clone https://github.com/omar-kaaki/Dual-hyperledger-Blockchain.git
+cd Dual-hyperledger-Blockchain
+git checkout claude/backup-012kvMLwmsqnxqfbzsF2HCYJ
+chmod +x *.sh
+./nuclear-reset.sh              # Type 'NUCLEAR'
+./deploy-chaincode.sh
+docker-compose -f docker-compose-storage.yml up -d && sleep 15
+docker exec -i mysql-coc mysql -uroot -prootpassword coc_evidence < 01-schema.sql
+docker-compose -f docker-compose-explorers.yml up -d && sleep 30
+./launch-webapp.sh
+```
+
+**Access:** http://localhost:5000
+
+---
+
 ## 📦 Prerequisites
 
 ### System Requirements
@@ -114,11 +153,14 @@ A dual-blockchain architecture for managing digital evidence chain of custody us
 
 ### Required Software
 
+See [SETUP.md](SETUP.md) for detailed installation instructions.
+
 #### 1. Docker & Docker Compose
 ```bash
 # Install Docker
-sudo apt-get update
-sudo apt-get install -y docker.io docker-compose
+curl -fsSL https://get.docker.com -o get-docker.sh
+sudo sh get-docker.sh
+sudo usermod -aG docker $USER
 
 # Verify installation
 docker --version
