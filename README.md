@@ -4,9 +4,15 @@ A dual-blockchain architecture for managing digital evidence chain of custody us
 
 ## 🚀 Quick Links
 
-- **[⚡ Quick Start Guide](QUICKSTART.md)** - Get running in 10 minutes
-- **[📖 Complete Setup Guide](SETUP.md)** - Detailed installation and configuration
-- **[🔧 Troubleshooting](#troubleshooting)** - Common issues and solutions
+### For New Users (Fresh VM/Laptop)
+- **[⚡ 5-Minute Quick Start](QUICK_START.md)** - One-command deployment for fresh Ubuntu systems
+- **[🤖 Complete Setup Script](COMPLETE_SETUP_README.md)** - Automated A-Z installation (installs everything)
+- **[🔧 Troubleshooting Guide](TROUBLESHOOTING.md)** - Fix common deployment and runtime issues
+
+### For Existing Setups
+- **[📖 Detailed Setup Guide](SETUP.md)** - Manual step-by-step installation
+- **[⚡ Quick Deploy](QUICKSTART.md)** - Fast deployment with prerequisites installed
+- **[🌐 API Integration](API_INTEGRATION.md)** - Connect external systems via REST API
 
 ---
 
