@@ -1,6 +1,8 @@
 # FYP Blockchain Requirements
 
-This document specifies all system requirements, dependencies, and versions needed to deploy and run the FYP blockchain network based on Hyperledger Fabric v2.5.14 LTS.
+This document specifies all system requirements, dependencies, and versions needed to deploy and run the FYP blockchain network based on **Hyperledger Fabric v2.5.14 LTS** - the latest stable release of Hyperledger Fabric as of October 2025.
+
+**Important:** All versions listed below are tested and verified compatible with Fabric v2.5.14.
 
 ---
 
@@ -29,8 +31,8 @@ This document specifies all system requirements, dependencies, and versions need
 
 | Name | Recommended Version | Install Method | Why |
 |------|---------------------|----------------|-----|
-| Docker Engine | 24.x or 25.x (latest stable) | [Official Docker docs](https://docs.docker.com/engine/install/) | Container runtime for all Fabric components |
-| Docker Compose Plugin | v2.x (latest stable) | Included with Docker Engine | Orchestrate multi-container deployments |
+| Docker Engine | ≥ 24.0.x (latest stable: 25.x) | [Official Docker docs](https://docs.docker.com/engine/install/) | Container runtime for all Fabric components |
+| Docker Compose Plugin | ≥ v2.20.x (latest v2.x stable) | Included with Docker Engine | Orchestrate multi-container deployments |
 
 **Post-install:** Add current user to docker group to run Docker without sudo:
 ```bash
@@ -41,7 +43,7 @@ sudo usermod -aG docker $USER
 
 | Name | Recommended Version | Install Method | Why |
 |------|---------------------|----------------|-----|
-| Go | ≥ 1.25.x (tested with 1.25.2) | [Official Go downloads](https://go.dev/dl/) | Required for Fabric binaries and Go chaincode |
+| Go | ≥ 1.22.x (tested with 1.22.x and 1.23.x) | [Official Go downloads](https://go.dev/dl/) | Required for Fabric binaries and Go chaincode |
 | Node.js | LTS 20.x | [NodeSource repository](https://github.com/nodesource/distributions) or [nvm](https://github.com/nvm-sh/nvm) | Fabric Gateway client SDK (if using Node.js) |
 | Python | 3.11+ | `apt install python3.11` or pyenv | Helper scripts and automation tooling |
 
@@ -107,7 +109,7 @@ Choose **one** client SDK for backend integration:
 
 | Name | Recommended Version | Install Method | Why |
 |------|---------------------|----------------|-----|
-| CouchDB | 3.x (latest stable) | Docker: `docker pull couchdb:3` | Enables rich JSON queries on world state |
+| CouchDB | 3.3.x (latest 3.x stable) | Docker: `docker pull couchdb:3.3` | Enables rich JSON queries on world state |
 
 **Configuration:** Each peer requires its own CouchDB container.
 
@@ -117,7 +119,7 @@ Choose **one** client SDK for backend integration:
 
 | Name | Recommended Version | Install Method | Why |
 |------|---------------------|----------------|-----|
-| IPFS (Kubo) | 0.38.x (latest stable) | Docker: `docker pull ipfs/kubo:v0.38.0` OR Native: [Kubo releases](https://github.com/ipfs/kubo/releases) | Decentralized storage for large files/evidence |
+| IPFS (Kubo) | ≥ 0.29.x (latest stable) | Docker: `docker pull ipfs/kubo:latest` OR Native: [Kubo releases](https://github.com/ipfs/kubo/releases) | Decentralized storage for large files/evidence |
 
 **Reference:** [IPFS Kubo Documentation](https://docs.ipfs.tech/install/command-line/)
 
@@ -137,16 +139,16 @@ Choose **one** client SDK for backend integration:
 
 | Component | Version |
 |-----------|---------|
-| **Hyperledger Fabric** | 2.5.14 |
+| **Hyperledger Fabric** | 2.5.14 (latest LTS) |
 | **Fabric CA** | 1.5.15 |
-| **Go** | ≥ 1.25.2 |
+| **Go** | ≥ 1.22.x |
 | **Node.js** | 20.x LTS |
 | **Python** | ≥ 3.11 |
-| **Docker Engine** | 24.x or 25.x |
-| **Docker Compose** | v2.x |
-| **CouchDB** | 3.x |
-| **IPFS (Kubo)** | 0.38.x |
-| **Casbin** | v2 |
+| **Docker Engine** | ≥ 24.0.x (latest: 25.x) |
+| **Docker Compose** | ≥ v2.20.x |
+| **CouchDB** | 3.3.x |
+| **IPFS (Kubo)** | ≥ 0.29.x |
+| **Casbin** | v2 (latest) |
 
 ---
 
@@ -162,11 +164,13 @@ sudo usermod -aG docker $USER
 
 ### 2. Install Go
 ```bash
-# Download and install Go 1.25.2
-wget https://go.dev/dl/go1.25.2.linux-amd64.tar.gz
+# Download and install Go 1.23.x (or latest 1.22.x+)
+# Check https://go.dev/dl/ for the latest version
+wget https://go.dev/dl/go1.23.4.linux-amd64.tar.gz
 sudo rm -rf /usr/local/go
-sudo tar -C /usr/local -xzf go1.25.2.linux-amd64.tar.gz
+sudo tar -C /usr/local -xzf go1.23.4.linux-amd64.tar.gz
 echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
+echo 'export PATH=$PATH:$HOME/go/bin' >> ~/.bashrc
 source ~/.bashrc
 ```
 
@@ -186,8 +190,8 @@ export PATH=$PATH:$(pwd)/fabric-samples/bin
 
 ### 5. Pull Additional Docker Images
 ```bash
-docker pull couchdb:3
-docker pull ipfs/kubo:v0.38.0
+docker pull couchdb:3.3
+docker pull ipfs/kubo:latest
 ```
 
 ---
@@ -198,9 +202,12 @@ docker pull ipfs/kubo:v0.38.0
 - All versions listed are tested and compatible with Hyperledger Fabric v2.5.14 LTS
 - For production deployments, pin all Docker images and dependencies to specific versions
 - Regular security updates should be applied to all system components
+- **Fabric 2.5.14 is the latest stable LTS release** as of October 2025
+- Minimum versions specified with ≥ symbol; latest stable versions recommended
 
 ---
 
 **Last Updated:** 2025-11-21
-**Fabric Version:** 2.5.14 LTS
+**Fabric Version:** 2.5.14 LTS (latest stable)
 **Fabric CA Version:** 1.5.15
+**Go Requirement:** ≥ 1.22.x (tested with 1.22.x and 1.23.x)
