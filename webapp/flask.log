@@ -1,4 +1,0 @@
-Traceback (most recent call last):
-  File "/home/omarkaaki/Desktop/files (1)/webapp/app.py", line 5, in <module>
-    import mysql.connector
-ModuleNotFoundError: No module named 'mysql'
