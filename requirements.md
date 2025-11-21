@@ -43,7 +43,7 @@ sudo usermod -aG docker $USER
 
 | Name | Recommended Version | Install Method | Why |
 |------|---------------------|----------------|-----|
-| Go | ≥ 1.22.x (tested with 1.22.x and 1.23.x) | [Official Go downloads](https://go.dev/dl/) | Required for Fabric binaries and Go chaincode |
+| Go | ≥ 1.22.x (latest stable: 1.25.4) | [Official Go downloads](https://go.dev/dl/) | Required for Fabric binaries and Go chaincode |
 | Node.js | LTS 20.x | [NodeSource repository](https://github.com/nodesource/distributions) or [nvm](https://github.com/nvm-sh/nvm) | Fabric Gateway client SDK (if using Node.js) |
 | Python | 3.11+ | `apt install python3.11` or pyenv | Helper scripts and automation tooling |
 
@@ -141,7 +141,7 @@ Choose **one** client SDK for backend integration:
 |-----------|---------|
 | **Hyperledger Fabric** | 2.5.14 (latest LTS) |
 | **Fabric CA** | 1.5.15 |
-| **Go** | ≥ 1.22.x |
+| **Go** | ≥ 1.22.x (latest: 1.25.4) |
 | **Node.js** | 20.x LTS |
 | **Python** | ≥ 3.11 |
 | **Docker Engine** | ≥ 24.0.x (latest: 25.x) |
@@ -164,11 +164,11 @@ sudo usermod -aG docker $USER
 
 ### 2. Install Go
 ```bash
-# Download and install Go 1.23.x (or latest 1.22.x+)
+# Download and install Go 1.25.4 (latest stable)
 # Check https://go.dev/dl/ for the latest version
-wget https://go.dev/dl/go1.23.4.linux-amd64.tar.gz
+wget https://go.dev/dl/go1.25.4.linux-amd64.tar.gz
 sudo rm -rf /usr/local/go
-sudo tar -C /usr/local -xzf go1.23.4.linux-amd64.tar.gz
+sudo tar -C /usr/local -xzf go1.25.4.linux-amd64.tar.gz
 echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
 echo 'export PATH=$PATH:$HOME/go/bin' >> ~/.bashrc
 source ~/.bashrc
@@ -210,4 +210,4 @@ docker pull ipfs/kubo:latest
 **Last Updated:** 2025-11-21
 **Fabric Version:** 2.5.14 LTS (latest stable)
 **Fabric CA Version:** 1.5.15
-**Go Requirement:** ≥ 1.22.x (tested with 1.22.x and 1.23.x)
+**Go Version:** ≥ 1.22.x (latest stable: 1.25.4, released November 5, 2025)
