@@ -1,1 +1,196 @@
+# FYP Blockchain - .gitignore
+# Excludes cryptographic material, temporary files, and build artifacts
+
+# ============================================================================
+# Cryptographic Material (CRITICAL - Never commit private keys)
+# ============================================================================
+
+# All crypto-config contents (MSP, certificates, private keys)
+crypto-config/**/*
+!crypto-config/**/msp/config.yaml
+# Keep the NodeOUs config.yaml templates but exclude all other crypto material
+
+# Fabric CA admin credentials and databases
+.fabric-ca-client/
+ca-config/**/fabric-ca-server.db
+ca-config/**/msp/
+ca-config/**/IssuerPublicKey
+ca-config/**/IssuerRevocationPublicKey
+ca-config/**/ca-cert.pem
+ca-config/**/tls-cert.pem
+
+# ============================================================================
+# Build Artifacts and Temporary Files
+# ============================================================================
+
+# Channel artifacts
+channel-artifacts/*.block
+channel-artifacts/*.tx
+channel-artifacts/*.json
+!channel-artifacts/.gitkeep
+
+# Genesis blocks
+*.block
+
+# Chaincode packages
+*.tar.gz
+chaincode/*.tar.gz
+
+# Logs
+*.log
+logs/
+*.log.*
 webapp/webapp.log
+
+# Temporary test files
+/tmp/
+.tmp/
+test-genesis.block
+
+# ============================================================================
+# Docker and Container Data
+# ============================================================================
+
+# Docker volumes data
+volumes/
+
+# CouchDB data
+couchdb/
+
+# ============================================================================
+# Development and IDE
+# ============================================================================
+
+# Visual Studio Code
+.vscode/
+*.code-workspace
+
+# JetBrains IDEs
+.idea/
+*.iml
+
+# Vim
+*.swp
+*.swo
+*~
+.*.swp
+
+# Emacs
+\#*\#
+.\#*
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Linux
+*~
+.directory
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ============================================================================
+# Language-specific
+# ============================================================================
+
+# Node.js
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Go
+vendor/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+go.work
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+*.egg-info/
+dist/
+build/
+
+# ============================================================================
+# Application-specific
+# ============================================================================
+
+# JumpServer connection credentials (if stored locally)
+jumpserver-credentials.json
+jumpserver-config.json
+
+# Environment files with secrets
+.env
+.env.local
+.env.*.local
+*.env
+
+# Backup files
+*.bak
+*.backup
+backup/
+
+# Archives
+*.zip
+*.tar
+*.tar.gz
+*.tar.bz2
+*.rar
+*.7z
+!dfir.tar.gz
+
+# ============================================================================
+# CI/CD and Testing
+# ============================================================================
+
+# Test coverage
+coverage/
+*.coverage
+htmlcov/
+.nyc_output/
+
+# Test reports
+test-results/
+*.xml
+
+# ============================================================================
+# Documentation Build Artifacts
+# ============================================================================
+
+# Sphinx documentation
+docs/_build/
+docs/_static/
+docs/_templates/
+
+# MkDocs
+site/
+
+# ============================================================================
+# Miscellaneous
+# ============================================================================
+
+# Certificates in root (only if accidentally generated there)
+/*.pem
+/*.crt
+/*.key
+
+# Sensitive configuration backups
+*-secret.yaml
+*-credentials.yaml
