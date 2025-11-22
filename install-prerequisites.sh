@@ -355,16 +355,32 @@ else
 fi
 
 # Install global packages for development
+# Ensure nvm is loaded
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
-if ! command_exists typescript; then
+# Add nvm to PATH if not already there
+if [[ ":$PATH:" != *":$NVM_DIR:"* ]]; then
+    export PATH="$NVM_DIR/versions/node/$(nvm version)/bin:$PATH"
+fi
+
+# Verify npm is available after nvm load
+if ! command_exists npm; then
+    print_error "npm not found after loading nvm"
+    print_info "Please run: source ~/.bashrc"
+    print_info "Then re-run this script"
+    exit 1
+fi
+
+# Install TypeScript globally (command is 'tsc', not 'typescript')
+if ! command_exists tsc; then
     npm install -g typescript
     print_success "TypeScript installed globally"
 else
     print_success "TypeScript is already installed ($(tsc --version))"
 fi
 
+# Install ts-node globally
 if ! command_exists ts-node; then
     npm install -g ts-node
     print_success "ts-node installed globally"
