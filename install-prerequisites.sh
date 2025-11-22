@@ -499,8 +499,20 @@ cd "$PROJECT_DIR"
 if [ -f "bin/fabric-ca-client" ] && [ -f "bin/configtxgen" ] && [ -f "bin/peer" ]; then
     print_success "Fabric binaries already exist in bin/"
 else
+    # Download binaries (they go to fabric-samples/bin by default)
     curl -sSL https://raw.githubusercontent.com/hyperledger/fabric/main/scripts/install-fabric.sh | bash -s -- binary ${FABRIC_VERSION} ${FABRIC_CA_VERSION}
-    print_success "Fabric binaries downloaded to bin/"
+
+    # Move binaries from fabric-samples/bin to bin/
+    if [ -d "fabric-samples/bin" ]; then
+        print_info "Moving binaries from fabric-samples/bin to bin/"
+        mkdir -p bin
+        mv fabric-samples/bin/* bin/
+        rm -rf fabric-samples
+        print_success "Fabric binaries moved to bin/"
+    else
+        print_error "fabric-samples/bin directory not found after download"
+        exit 1
+    fi
 fi
 
 # Add to PATH
