@@ -1,0 +1,267 @@
+FYP Blockchain - System Requirements
+=====================================
+
+Last Updated: 2025-11-22
+Branch: claude/clone-fyp-repo-01GcQmZnMbvkNkxehnggLCs3
+
+AUTOMATED INSTALLATION
+======================
+Run this single command to install everything:
+    ./install-prerequisites.sh
+
+Or manually install using the sections below.
+
+CORE VERSIONS
+=============
+Hyperledger Fabric:     2.5.14 (LTS)
+Fabric CA:              1.5.15
+Go:                     1.25.4
+Node.js:                20.x LTS (optional)
+Docker Engine:          24.0+ (25.x recommended)
+Docker Compose:         2.20+
+CouchDB:                3.3.x
+IPFS (Kubo):            0.29+ (optional)
+Python:                 3.11+
+
+SYSTEM REQUIREMENTS
+===================
+OS:                     64-bit Linux (Kali Linux / Debian recommended)
+RAM:                    4GB minimum (8GB+ recommended)
+Disk Space:             20GB free minimum
+Network:                Internet connection required
+Permissions:            sudo/root access required
+
+APT PACKAGES (Debian/Ubuntu/Kali)
+==================================
+git
+curl
+wget
+tar
+unzip
+jq
+openssl
+build-essential
+tree
+htop
+python3
+python3-pip
+docker.io
+docker-compose
+
+DOCKER IMAGES REQUIRED
+======================
+hyperledger/fabric-peer:2.5.14
+hyperledger/fabric-orderer:2.5.14
+hyperledger/fabric-ca:1.5.15
+hyperledger/fabric-tools:2.5.14
+couchdb:3.3
+ipfs/kubo:latest (optional)
+
+FABRIC BINARIES (installed in ./bin/)
+======================================
+peer
+orderer
+configtxgen
+configtxlator
+osnadmin
+fabric-ca-server
+fabric-ca-client
+
+INSTALLATION COMMANDS (Manual)
+===============================
+
+1. Update System
+   -------------
+   sudo apt update && sudo apt upgrade -y
+
+2. Install Core Tools
+   ------------------
+   sudo apt install -y git curl wget tar unzip jq openssl build-essential tree htop python3 python3-pip
+
+3. Install Docker
+   --------------
+   sudo apt install -y docker.io docker-compose
+   sudo systemctl start docker
+   sudo systemctl enable docker
+   sudo usermod -aG docker $USER
+   # Log out and back in after this
+
+4. Install Go 1.25.4
+   -----------------
+   cd ~
+   wget https://go.dev/dl/go1.25.4.linux-amd64.tar.gz
+   sudo rm -rf /usr/local/go
+   sudo tar -C /usr/local -xzf go1.25.4.linux-amd64.tar.gz
+   echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
+   echo 'export PATH=$PATH:$HOME/go/bin' >> ~/.bashrc
+   source ~/.bashrc
+   rm go1.25.4.linux-amd64.tar.gz
+
+5. Install Node.js 20.x (Optional)
+   --------------------------------
+   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash
+   source ~/.bashrc
+   nvm install 20
+   nvm use 20
+   nvm alias default 20
+
+6. Install Fabric Binaries
+   ------------------------
+   cd ~/FYPBcoc
+   curl -sSL https://raw.githubusercontent.com/hyperledger/fabric/main/scripts/install-fabric.sh | bash -s -- binary 2.5.14 1.5.15
+   echo 'export PATH=$PATH:~/FYPBcoc/bin' >> ~/.bashrc
+   source ~/.bashrc
+   # Optional: sudo cp bin/* /usr/local/bin/
+
+7. Pull Docker Images
+   ------------------
+   docker pull hyperledger/fabric-peer:2.5.14
+   docker pull hyperledger/fabric-orderer:2.5.14
+   docker pull hyperledger/fabric-ca:1.5.15
+   docker pull hyperledger/fabric-tools:2.5.14
+   docker pull couchdb:3.3
+   docker pull ipfs/kubo:latest
+
+VERIFICATION COMMANDS
+=====================
+docker --version
+docker-compose --version
+go version
+node --version (if installed)
+npm --version (if installed)
+fabric-ca-client version
+configtxgen --version
+peer version
+docker images | grep hyperledger
+
+TESTING THE SETUP
+=================
+cd ~/FYPBcoc
+
+# Quick validation (no crypto generation)
+./scripts/test-ca-setup.sh --skip-crypto
+
+# Full test (generates crypto material)
+./scripts/test-ca-setup.sh
+
+# Manual crypto generation
+docker-compose -f docker-compose-ca.yaml up -d
+sleep 15
+./scripts/generate-crypto.sh
+
+PROJECT STRUCTURE
+=================
+FYPBcoc/
+├── bin/                          # Fabric binaries
+├── ca-config/                    # CA server configurations
+│   ├── ordererorg-ca/
+│   ├── ordererorg-tlsca/
+│   ├── laborg-ca/
+│   ├── laborg-tlsca/
+│   ├── courtorg-ca/
+│   └── courtorg-tlsca/
+├── crypto-config/                # Generated crypto material (gitignored)
+│   ├── ordererOrganizations/
+│   └── peerOrganizations/
+├── scripts/                      # Automation scripts
+│   ├── generate-crypto.sh
+│   ├── test-ca-setup.sh
+│   └── README.md
+├── configtx.yaml                 # Channel configuration
+├── docker-compose-ca.yaml        # CA containers
+├── install-prerequisites.sh      # THIS AUTOMATED INSTALLER
+├── requirements.md               # Detailed documentation
+├── requirements.txt              # THIS FILE
+└── .gitignore                    # Git ignore rules
+
+CERTIFICATE AUTHORITIES (6 CAs)
+================================
+OrdererOrg Identity CA:     localhost:7054  (ca-admin:ca-adminpw)
+OrdererOrg TLS CA:          localhost:8054  (tls-ca-admin:tlscapw)
+LabOrg Identity CA:         localhost:7055  (ca-admin:ca-adminpw)
+LabOrg TLS CA:              localhost:8055  (tls-ca-admin:tlscapw)
+CourtOrg Identity CA:       localhost:7056  (ca-admin:ca-adminpw)
+CourtOrg TLS CA:            localhost:8056  (tls-ca-admin:tlscapw)
+
+IDENTITIES (7 total)
+====================
+OrdererOrg:
+  - orderer1.ordererorg.example.com (orderer)
+  - orderer-admin@ordererorg.example.com (admin)
+
+LabOrg:
+  - peer0.laborg.example.com (peer)
+  - lab-admin@laborg.example.com (admin)
+  - lab-gw@laborg.example.com (gateway client)
+
+CourtOrg:
+  - peer0.courtorg.example.com (peer)
+  - court-admin@courtorg.example.com (admin)
+
+NETWORK TOPOLOGY
+================
+- 1 Orderer node (Raft consensus)
+- 2 Peer nodes (1 per peer org)
+- 2 Channels:
+  * hot-chain: OR('LabOrgMSP.peer')
+  * cold-chain: AND('LabOrgMSP.peer', 'CourtOrgMSP.peer')
+
+TROUBLESHOOTING
+===============
+Issue: Docker permission denied
+Fix:   sudo usermod -aG docker $USER
+       # Then log out and back in, or run: newgrp docker
+
+Issue: fabric-ca-client not found
+Fix:   export PATH=$PATH:~/FYPBcoc/bin
+       # Or: sudo cp ~/FYPBcoc/bin/* /usr/local/bin/
+
+Issue: CA containers won't start
+Fix:   docker-compose -f docker-compose-ca.yaml down
+       docker-compose -f docker-compose-ca.yaml up -d
+       docker-compose -f docker-compose-ca.yaml logs
+
+Issue: go: command not found
+Fix:   export PATH=$PATH:/usr/local/go/bin
+       source ~/.bashrc
+
+Issue: Network connection issues
+Fix:   Check DNS: ping 8.8.8.8
+       Check internet: ping github.com
+       Configure proxy if needed
+
+CLEANUP COMMANDS
+================
+# Stop CA containers
+docker-compose -f docker-compose-ca.yaml down
+
+# Remove generated crypto material
+rm -rf crypto-config/*
+rm -rf .fabric-ca-client/
+
+# Remove all Docker containers
+docker stop $(docker ps -aq)
+docker rm $(docker ps -aq)
+
+# Remove Fabric images
+docker rmi $(docker images 'hyperledger/*' -q)
+
+SUPPORT & DOCUMENTATION
+=======================
+Project Repository:     https://github.com/rae81/FYPBcoc
+Development Branch:     claude/clone-fyp-repo-01GcQmZnMbvkNkxehnggLCs3
+Fabric Documentation:   https://hyperledger-fabric.readthedocs.io/en/release-2.5/
+Fabric CA Docs:         https://hyperledger-fabric-ca.readthedocs.io/
+Requirements Doc:       requirements.md
+Installation Script:    install-prerequisites.sh
+
+NOTES
+=====
+- All paths use absolute references: /home/user/FYPBcoc/
+- Private keys and certificates are gitignored for security
+- Only NodeOUs config.yaml templates are version controlled
+- Run 'source ~/.bashrc' after installation to update PATH
+- Log out/in required after adding user to docker group
+- Test setup with: ./scripts/test-ca-setup.sh --skip-crypto
+- For production, pin all Docker images to specific versions
+- Apply regular security updates to all system components
