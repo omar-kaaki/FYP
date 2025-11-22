@@ -32,9 +32,12 @@ channel-artifacts/*.json
 # Genesis blocks
 *.block
 
-# Chaincode packages
+# Chaincode packages and build artifacts
 *.tar.gz
 chaincode/*.tar.gz
+coc_chaincode/vendor/
+coc_chaincode/coc_chaincode
+*_chaincode_*.tar.gz
 
 # Logs
 *.log

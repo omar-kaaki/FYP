@@ -1,0 +1,20 @@
+module github.com/rae81/FYPBcoc/coc_chaincode
+
+go 1.21
+
+require (
+	github.com/casbin/casbin/v2 v2.97.0
+	github.com/hyperledger/fabric-chaincode-go v0.0.0-20240618150331-c5e787a1b0cf
+	github.com/hyperledger/fabric-protos-go v0.3.3
+)
+
+require (
+	github.com/golang/protobuf v1.5.4 // indirect
+	github.com/knz/go-libedit v1.10.1 // indirect
+	golang.org/x/net v0.25.0 // indirect
+	golang.org/x/sys v0.20.0 // indirect
+	golang.org/x/text v0.15.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20240528184218-531527333157 // indirect
+	google.golang.org/grpc v1.65.0 // indirect
+	google.golang.org/protobuf v1.34.1 // indirect
+)

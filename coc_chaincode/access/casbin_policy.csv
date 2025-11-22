@@ -1,0 +1,43 @@
+# Casbin Policy for Chain of Custody System
+# Format: p, role, domain, object, action
+
+# BlockchainInvestigator Permissions
+# HOT CHAIN - Full CRUD for investigations and evidence
+p, BlockchainInvestigator, hot, investigation:*, create
+p, BlockchainInvestigator, hot, investigation:*, append
+p, BlockchainInvestigator, hot, investigation:*, view
+p, BlockchainInvestigator, hot, investigation:*, update
+p, BlockchainInvestigator, hot, evidence:*, create
+p, BlockchainInvestigator, hot, evidence:*, append
+p, BlockchainInvestigator, hot, evidence:*, view
+
+# COLD CHAIN - Read-only access
+p, BlockchainInvestigator, cold, investigation:*, view
+p, BlockchainInvestigator, cold, evidence:*, view
+
+# BlockchainAuditor Permissions
+# Both chains - Read-only access to everything
+p, BlockchainAuditor, hot, investigation:*, view
+p, BlockchainAuditor, hot, evidence:*, view
+p, BlockchainAuditor, cold, investigation:*, view
+p, BlockchainAuditor, cold, evidence:*, view
+p, BlockchainAuditor, cold, guid_mapping, view
+
+# BlockchainCourt Permissions
+# COLD CHAIN ONLY - Can view, archive, reopen, manage GUID mappings
+p, BlockchainCourt, cold, investigation:*, view
+p, BlockchainCourt, cold, investigation:*, archive
+p, BlockchainCourt, cold, investigation:*, reopen
+p, BlockchainCourt, cold, evidence:*, view
+p, BlockchainCourt, cold, guid_mapping, create
+p, BlockchainCourt, cold, guid_mapping, resolve_guid
+p, BlockchainCourt, cold, guid_mapping, view
+
+# SystemAdmin Permissions
+# Can manage user roles on both chains
+p, SystemAdmin, hot, userrole:*, manage
+p, SystemAdmin, cold, userrole:*, manage
+p, SystemAdmin, hot, investigation:*, view
+p, SystemAdmin, cold, investigation:*, view
+p, SystemAdmin, hot, evidence:*, view
+p, SystemAdmin, cold, evidence:*, view

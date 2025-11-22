@@ -277,6 +277,23 @@ FYPBcoc/
 │   ├── chaincode/               # Cold chain chaincode
 │   ├── configtx.yaml            # Cold chain configuration
 │   └── docker-compose-ca.yaml   # Cold chain CAs
+├── coc_chaincode/                # Chain of Custody Chaincode
+│   ├── access/                  # Casbin RBAC configuration
+│   │   ├── casbin_model.conf   # RBAC domain model
+│   │   └── casbin_policy.csv   # Permission policies
+│   ├── rbac/                    # Gateway and user role management
+│   │   ├── gateway.go          # Identity validation
+│   │   └── userroles.go        # On-chain user role mapping
+│   ├── domain/                  # Business logic
+│   │   ├── investigation.go    # Investigation CRUD
+│   │   ├── evidence.go         # Evidence CRUD + chain of custody
+│   │   └── guidmap.go          # GUID mapping (cold-chain)
+│   ├── utils/                   # Helper utilities
+│   │   └── json.go             # JSON marshaling
+│   ├── main.go                  # Chaincode entry point
+│   ├── go.mod                   # Go module definition
+│   ├── build.sh                 # Build and package script
+│   └── README.md                # Chaincode documentation
 ├── install-prerequisites.sh      # Automated installer
 ├── test-all.sh                  # Comprehensive test suite
 ├── requirements.md               # Detailed documentation
@@ -340,6 +357,59 @@ COLD BLOCKCHAIN (Archival):
     * peer0.courtorg.cold.coc.com:9051
   - Organizations: OrdererOrg, LabOrg, CourtOrg
   - Endorsement: AND('LabOrgMSP.peer', 'CourtOrgMSP.peer')
+
+CHAINCODE DEPLOYMENT
+=====================
+
+CHAINCODE: coc_chaincode (Chain of Custody)
+- Language: Go 1.21
+- RBAC: Casbin with domain support (hot/cold)
+- Gateway Identity: lab-gw@LabOrgMSP (JumpServer)
+
+DEPLOYED AS:
+- hot_chaincode on hot-chain
+  * Endorsement policy: OR('LabOrgMSP.peer')
+  * Installed on: peer0.laborg.hot.coc.com
+
+- cold_chaincode on cold-chain
+  * Endorsement policy: AND('LabOrgMSP.peer','CourtOrgMSP.peer')
+  * Installed on: peer0.laborg.cold.coc.com, peer0.courtorg.cold.coc.com
+
+ROLES:
+- BlockchainInvestigator: Create/modify on hot, read-only on cold
+- BlockchainAuditor: Read-only on both chains
+- BlockchainCourt: Archive/reopen/GUID management on cold
+- SystemAdmin: User role management
+
+DATA MODELS:
+- Investigation: ID, title, description, status, timestamps, channel
+- Evidence: ID, investigation ID, hash, IPFS CID, metadata, chain of custody
+- GUID Mapping: GUID ↔ evidence ID (cold-chain only for court anonymization)
+- User Role: Principal ID, roles array, updated info
+
+BUILD AND DEPLOY:
+1. Build chaincode:
+   cd coc_chaincode && ./build.sh
+
+2. Deploy to hot-chain:
+   cd hot-blockchain && ./scripts/deploy-chaincode.sh
+
+3. Deploy to cold-chain:
+   cd cold-blockchain && ./scripts/deploy-chaincode.sh
+
+4. Set user roles (admin function):
+   peer chaincode invoke -C hot-chain -n hot_chaincode \
+     -c '{"function":"SetUserRoles","Args":["LabOrgMSP|lab-gw|user:investigator1","BlockchainInvestigator"]}'
+
+ACCESS CONTROL FLOW:
+1. JumpServer connects with lab-gw gateway identity
+2. Transient map contains userId and role (not stored on ledger)
+3. Chaincode validates gateway identity (MSP ID + CN)
+4. Extracts user context from transient
+5. Builds principal ID: LabOrgMSP|lab-gw|user:<userId>
+6. Validates user has claimed role in on-chain mapping
+7. Enforces Casbin policy (role, domain, object, action)
+8. Executes business logic if permitted
 
 TROUBLESHOOTING
 ===============
