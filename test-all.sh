@@ -461,10 +461,87 @@ fi
 cd "${SCRIPT_DIR}"
 
 # ============================================================================
-# PHASE 8: Verify Domain Names
+# PHASE 8: Channel Artifacts Scripts Validation
 # ============================================================================
 
-print_section "PHASE 8: Domain Name Validation"
+print_section "PHASE 8: Channel Artifacts Scripts Validation"
+
+print_test "Checking channel artifacts scripts exist"
+
+channel_scripts=(
+    "hot-blockchain/scripts/generate-channel-artifacts.sh"
+    "hot-blockchain/scripts/create-channel.sh"
+    "cold-blockchain/scripts/generate-channel-artifacts.sh"
+    "cold-blockchain/scripts/create-channel.sh"
+)
+
+for script in "${channel_scripts[@]}"; do
+    if [[ -f "${SCRIPT_DIR}/$script" ]]; then
+        if [[ -x "${SCRIPT_DIR}/$script" ]]; then
+            pass "Channel script exists and is executable: $(basename $script)"
+        else
+            warn "Channel script exists but not executable: $(basename $script)"
+        fi
+    else
+        fail "Channel script missing: $script"
+    fi
+done
+
+print_test "Validating configtx.yaml can generate artifacts"
+
+# Test hot blockchain configtx.yaml
+cd "${SCRIPT_DIR}/hot-blockchain"
+export FABRIC_CFG_PATH="${SCRIPT_DIR}/hot-blockchain"
+if configtxgen -profile HotChainGenesis -inspectBlock /dev/null 2>&1 | grep -q "HotChainGenesis"; then
+    pass "Hot blockchain configtx.yaml is valid (HotChainGenesis profile)"
+else
+    fail "Hot blockchain configtx.yaml validation failed"
+fi
+
+# Test cold blockchain configtx.yaml
+cd "${SCRIPT_DIR}/cold-blockchain"
+export FABRIC_CFG_PATH="${SCRIPT_DIR}/cold-blockchain"
+if configtxgen -profile ColdChainGenesis -inspectBlock /dev/null 2>&1 | grep -q "ColdChainGenesis"; then
+    pass "Cold blockchain configtx.yaml is valid (ColdChainGenesis profile)"
+else
+    fail "Cold blockchain configtx.yaml validation failed"
+fi
+
+cd "${SCRIPT_DIR}"
+
+print_test "Checking for existing channel artifacts"
+
+hot_artifacts_exist=false
+if [[ -d "${SCRIPT_DIR}/hot-blockchain/channel-artifacts" ]]; then
+    artifact_count=$(ls -1 "${SCRIPT_DIR}/hot-blockchain/channel-artifacts"/*.block "${SCRIPT_DIR}/hot-blockchain/channel-artifacts"/*.tx 2>/dev/null | wc -l || echo "0")
+    if [[ $artifact_count -gt 0 ]]; then
+        pass "Hot blockchain has $artifact_count channel artifact(s)"
+        hot_artifacts_exist=true
+    else
+        info "Hot blockchain channel-artifacts directory exists but is empty"
+    fi
+else
+    info "Hot blockchain channel-artifacts directory does not exist yet"
+fi
+
+cold_artifacts_exist=false
+if [[ -d "${SCRIPT_DIR}/cold-blockchain/channel-artifacts" ]]; then
+    artifact_count=$(ls -1 "${SCRIPT_DIR}/cold-blockchain/channel-artifacts"/*.block "${SCRIPT_DIR}/cold-blockchain/channel-artifacts"/*.tx 2>/dev/null | wc -l || echo "0")
+    if [[ $artifact_count -gt 0 ]]; then
+        pass "Cold blockchain has $artifact_count channel artifact(s)"
+        cold_artifacts_exist=true
+    else
+        info "Cold blockchain channel-artifacts directory exists but is empty"
+    fi
+else
+    info "Cold blockchain channel-artifacts directory does not exist yet"
+fi
+
+# ============================================================================
+# PHASE 9: Verify Domain Names
+# ============================================================================
+
+print_section "PHASE 9: Domain Name Validation"
 
 print_test "Checking for incorrect .example.com domains"
 if grep -r "example\.com" "${SCRIPT_DIR}/hot-blockchain" "${SCRIPT_DIR}/cold-blockchain" --include="*.yaml" --include="*.sh" 2>/dev/null | grep -v "^Binary" | grep -v ".git"; then
@@ -545,6 +622,14 @@ if [[ $TOTAL_FAILED -eq 0 ]] && [[ $HOT_PASSED -eq 1 ]] && [[ $COLD_PASSED -eq 1
     echo "  3. Generate crypto material:"
     echo "     cd hot-blockchain && ./scripts/generate-crypto.sh"
     echo "     cd cold-blockchain && ./scripts/generate-crypto.sh"
+    echo ""
+    echo "  4. Generate channel artifacts:"
+    echo "     cd hot-blockchain && ./scripts/generate-channel-artifacts.sh"
+    echo "     cd cold-blockchain && ./scripts/generate-channel-artifacts.sh"
+    echo ""
+    echo "  5. Start network and create channels:"
+    echo "     cd hot-blockchain && ./scripts/create-channel.sh"
+    echo "     cd cold-blockchain && ./scripts/create-channel.sh"
     echo ""
     exit 0
 else
