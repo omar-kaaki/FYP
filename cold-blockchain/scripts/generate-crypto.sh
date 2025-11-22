@@ -173,6 +173,33 @@ fabric-ca-client enroll -u https://${CA_ADMIN}:${CA_ADMIN_PW}@localhost:7156 \
     --tls.certfiles "${CRYPTO_DIR}/peerOrganizations/courtorg.cold.coc.com/ca/ca-cert.pem"
 print_success "CourtOrg Identity CA Admin enrolled"
 
+# Enroll TLS CA Admins
+print_section "Enrolling TLS CA Admins"
+
+# OrdererOrg TLS CA Admin
+export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/ordererOrganizations/ordererorg.cold.coc.com/tlsca-admin"
+mkdir -p "${FABRIC_CA_CLIENT_HOME}"
+fabric-ca-client enroll -u https://${TLSCA_ADMIN}:${TLSCA_ADMIN_PW}@localhost:8154 \
+    --caname tlsca.ordererorg.cold.coc.com \
+    --tls.certfiles "${CRYPTO_DIR}/ordererOrganizations/ordererorg.cold.coc.com/tlsca/tls-cert.pem"
+print_success "OrdererOrg TLS CA Admin enrolled"
+
+# LabOrg TLS CA Admin
+export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/peerOrganizations/laborg.cold.coc.com/tlsca-admin"
+mkdir -p "${FABRIC_CA_CLIENT_HOME}"
+fabric-ca-client enroll -u https://${TLSCA_ADMIN}:${TLSCA_ADMIN_PW}@localhost:8155 \
+    --caname tlsca.laborg.cold.coc.com \
+    --tls.certfiles "${CRYPTO_DIR}/peerOrganizations/laborg.cold.coc.com/tlsca/tls-cert.pem"
+print_success "LabOrg TLS CA Admin enrolled"
+
+# CourtOrg TLS CA Admin
+export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/peerOrganizations/courtorg.cold.coc.com/tlsca-admin"
+mkdir -p "${FABRIC_CA_CLIENT_HOME}"
+fabric-ca-client enroll -u https://${TLSCA_ADMIN}:${TLSCA_ADMIN_PW}@localhost:8156 \
+    --caname tlsca.courtorg.cold.coc.com \
+    --tls.certfiles "${CRYPTO_DIR}/peerOrganizations/courtorg.cold.coc.com/tlsca/tls-cert.pem"
+print_success "CourtOrg TLS CA Admin enrolled"
+
 # ============================================================================
 # STEP 3: Register Identities
 # ============================================================================
@@ -197,6 +224,18 @@ fabric-ca-client register --caname ca.ordererorg.cold.coc.com \
     --tls.certfiles "${CRYPTO_DIR}/ordererOrganizations/ordererorg.cold.coc.com/ca/ca-cert.pem"
 
 print_success "OrdererOrg identities registered"
+
+# Register OrdererOrg identities with TLS CA
+print_section "Registering OrdererOrg TLS identities"
+export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/ordererOrganizations/ordererorg.cold.coc.com/tlsca-admin"
+
+fabric-ca-client register --caname tlsca.ordererorg.cold.coc.com \
+    --id.name orderer.cold.coc.com \
+    --id.secret ordererpw \
+    --id.type orderer \
+    --tls.certfiles "${CRYPTO_DIR}/ordererOrganizations/ordererorg.cold.coc.com/tlsca/tls-cert.pem"
+
+print_success "OrdererOrg TLS identities registered"
 
 # Register LabOrg identities
 print_section "Registering LabOrg identities"
@@ -223,6 +262,18 @@ fabric-ca-client register --caname ca.laborg.cold.coc.com \
 
 print_success "LabOrg identities registered"
 
+# Register LabOrg identities with TLS CA
+print_section "Registering LabOrg TLS identities"
+export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/peerOrganizations/laborg.cold.coc.com/tlsca-admin"
+
+fabric-ca-client register --caname tlsca.laborg.cold.coc.com \
+    --id.name peer0.laborg.cold.coc.com \
+    --id.secret peer0pw \
+    --id.type peer \
+    --tls.certfiles "${CRYPTO_DIR}/peerOrganizations/laborg.cold.coc.com/tlsca/tls-cert.pem"
+
+print_success "LabOrg TLS identities registered"
+
 # Register CourtOrg identities
 print_section "Registering CourtOrg identities"
 export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/peerOrganizations/courtorg.cold.coc.com"
@@ -247,6 +298,18 @@ fabric-ca-client register --caname ca.courtorg.cold.coc.com \
     --tls.certfiles "${CRYPTO_DIR}/peerOrganizations/courtorg.cold.coc.com/ca/ca-cert.pem"
 
 print_success "CourtOrg identities registered"
+
+# Register CourtOrg identities with TLS CA
+print_section "Registering CourtOrg TLS identities"
+export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/peerOrganizations/courtorg.cold.coc.com/tlsca-admin"
+
+fabric-ca-client register --caname tlsca.courtorg.cold.coc.com \
+    --id.name peer0.courtorg.cold.coc.com \
+    --id.secret peer0pw \
+    --id.type peer \
+    --tls.certfiles "${CRYPTO_DIR}/peerOrganizations/courtorg.cold.coc.com/tlsca/tls-cert.pem"
+
+print_success "CourtOrg TLS identities registered"
 
 # ============================================================================
 # STEP 4: Build OrdererOrg MSP and Orderer Node

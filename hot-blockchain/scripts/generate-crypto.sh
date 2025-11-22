@@ -154,6 +154,25 @@ fabric-ca-client enroll -u https://${CA_ADMIN}:${CA_ADMIN_PW}@localhost:7055 \
     --tls.certfiles "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/ca/ca-cert.pem"
 print_success "LabOrg Identity CA Admin enrolled"
 
+# Enroll TLS CA Admins
+print_section "Enrolling TLS CA Admins"
+
+# OrdererOrg TLS CA Admin
+export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/tlsca-admin"
+mkdir -p "${FABRIC_CA_CLIENT_HOME}"
+fabric-ca-client enroll -u https://${TLSCA_ADMIN}:${TLSCA_ADMIN_PW}@localhost:8054 \
+    --caname tlsca.ordererorg.hot.coc.com \
+    --tls.certfiles "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/tlsca/tls-cert.pem"
+print_success "OrdererOrg TLS CA Admin enrolled"
+
+# LabOrg TLS CA Admin
+export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/tlsca-admin"
+mkdir -p "${FABRIC_CA_CLIENT_HOME}"
+fabric-ca-client enroll -u https://${TLSCA_ADMIN}:${TLSCA_ADMIN_PW}@localhost:8055 \
+    --caname tlsca.laborg.hot.coc.com \
+    --tls.certfiles "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/tlsca/tls-cert.pem"
+print_success "LabOrg TLS CA Admin enrolled"
+
 # ============================================================================
 # STEP 3: Register Identities
 # ============================================================================
@@ -179,6 +198,18 @@ fabric-ca-client register --caname ca.ordererorg.hot.coc.com \
 
 print_success "OrdererOrg identities registered"
 
+# Register OrdererOrg identities with TLS CA
+print_section "Registering OrdererOrg TLS identities"
+export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/tlsca-admin"
+
+fabric-ca-client register --caname tlsca.ordererorg.hot.coc.com \
+    --id.name orderer.hot.coc.com \
+    --id.secret ordererpw \
+    --id.type orderer \
+    --tls.certfiles "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/tlsca/tls-cert.pem"
+
+print_success "OrdererOrg TLS identities registered"
+
 # Register LabOrg identities
 print_section "Registering LabOrg identities"
 export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com"
@@ -203,6 +234,18 @@ fabric-ca-client register --caname ca.laborg.hot.coc.com \
     --tls.certfiles "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/ca/ca-cert.pem"
 
 print_success "LabOrg identities registered"
+
+# Register LabOrg identities with TLS CA
+print_section "Registering LabOrg TLS identities"
+export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/tlsca-admin"
+
+fabric-ca-client register --caname tlsca.laborg.hot.coc.com \
+    --id.name peer0.laborg.hot.coc.com \
+    --id.secret peer0pw \
+    --id.type peer \
+    --tls.certfiles "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/tlsca/tls-cert.pem"
+
+print_success "LabOrg TLS identities registered"
 
 # ============================================================================
 # STEP 4: Enroll Orderer Identity and Build MSP
