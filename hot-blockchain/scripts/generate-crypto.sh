@@ -1,17 +1,11 @@
 #!/bin/bash
 #
-# generate-crypto.sh - Generate all cryptographic material for FYP Blockchain
-# Hyperledger Fabric v2.5.14
+# generate-crypto.sh - Generate cryptographic material for HOT Blockchain
+# Hyperledger Fabric v2.5.14 - Active Investigation Chain
 #
-# This script:
-# 1. Starts all Certificate Authority containers
-# 2. Initializes CAs with proper configurations
-# 3. Registers all identities (orderers, peers, admins, clients)
-# 4. Enrolls all identities to generate certificates
-# 5. Generates TLS certificates for all nodes
-# 6. Organizes MSP directory structure
-#
-# Usage: ./generate-crypto.sh
+# This script generates complete MSP and TLS certificates for:
+# - OrdererOrg (1 orderer node)
+# - LabOrg (1 peer node)
 #
 
 set -e
@@ -20,22 +14,33 @@ set -e
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Base paths
-BASE_DIR="/home/user/FYPBcoc"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+BASE_DIR="$(dirname "$SCRIPT_DIR")"
 CRYPTO_DIR="${BASE_DIR}/crypto-config"
-FABRIC_CA_CLIENT_HOME="${BASE_DIR}/.fabric-ca-client"
+CA_DIR="${BASE_DIR}/ca-config"
 
-# CA admin credentials
-# Identity CAs use ca-admin:ca-adminpw
-# TLS CAs use tls-ca-admin:tlscapw
-IDENTITY_CA_ADMIN="ca-admin"
-IDENTITY_CA_PASS="ca-adminpw"
-TLS_CA_ADMIN="tls-ca-admin"
-TLS_CA_PASS="tlscapw"
+# Fabric CA client home
+export FABRIC_CA_CLIENT_HOME="${BASE_DIR}/.fabric-ca-client"
 
-echo -e "${GREEN}===== FYP Blockchain - Crypto Material Generation =====${NC}"
+# CA URLs and credentials
+ORDERER_CA_URL="https://localhost:7054"
+ORDERER_TLSCA_URL="https://localhost:8054"
+LABORG_CA_URL="https://localhost:7055"
+LABORG_TLSCA_URL="https://localhost:8055"
+
+CA_ADMIN="ca-admin"
+CA_ADMIN_PW="ca-adminpw"
+TLSCA_ADMIN="tls-ca-admin"
+TLSCA_ADMIN_PW="tlscapw"
+
+echo -e "${BLUE}========================================${NC}"
+echo -e "${BLUE}  HOT Blockchain Crypto Generation${NC}"
+echo -e "${BLUE}  Active Investigation Chain${NC}"
+echo -e "${BLUE}========================================${NC}"
 echo ""
 
 # Function to print section headers
@@ -43,6 +48,16 @@ print_section() {
     echo ""
     echo -e "${YELLOW}>>> $1${NC}"
     echo ""
+}
+
+# Function to print success
+print_success() {
+    echo -e "${GREEN}✓ $1${NC}"
+}
+
+# Function to print error
+print_error() {
+    echo -e "${RED}✗ ERROR: $1${NC}"
 }
 
 # Function to wait for CA to be ready
@@ -56,7 +71,7 @@ wait_for_ca() {
 
     while [ $attempt -le $max_attempts ]; do
         if curl -sSf -k "${ca_url}/cainfo" > /dev/null 2>&1; then
-            echo -e "${GREEN}$ca_name is ready!${NC}"
+            print_success "$ca_name is ready!"
             return 0
         fi
         echo "Attempt $attempt/$max_attempts: $ca_name not ready yet..."
@@ -64,7 +79,7 @@ wait_for_ca() {
         attempt=$((attempt + 1))
     done
 
-    echo -e "${RED}ERROR: $ca_name failed to start after $max_attempts attempts${NC}"
+    print_error "$ca_name failed to start after $max_attempts attempts"
     exit 1
 }
 
@@ -74,248 +89,297 @@ wait_for_ca() {
 
 print_section "STEP 1: Starting Certificate Authority containers"
 
-docker-compose -f "${BASE_DIR}/docker-compose-ca.yaml" up -d
+cd "${BASE_DIR}"
+docker-compose -f docker-compose-ca.yaml up -d
 
 # Wait for all CAs to be ready
-wait_for_ca "https://localhost:7054" "OrdererOrg Identity CA"
-wait_for_ca "https://localhost:8054" "OrdererOrg TLS CA"
-wait_for_ca "https://localhost:7055" "LabOrg Identity CA"
-wait_for_ca "https://localhost:8055" "LabOrg TLS CA"
-wait_for_ca "https://localhost:7056" "CourtOrg Identity CA"
-wait_for_ca "https://localhost:8056" "CourtOrg TLS CA"
+wait_for_ca "${ORDERER_CA_URL}" "OrdererOrg Identity CA"
+wait_for_ca "${ORDERER_TLSCA_URL}" "OrdererOrg TLS CA"
+wait_for_ca "${LABORG_CA_URL}" "LabOrg Identity CA"
+wait_for_ca "${LABORG_TLSCA_URL}" "LabOrg TLS CA"
 
-sleep 5
+sleep 3
 
 # ============================================================================
-# STEP 2: Enroll CA Admins and get root certificates
+# STEP 2: Enroll CA Admins
 # ============================================================================
 
 print_section "STEP 2: Enrolling CA Admins"
 
+# Create CA directories if they don't exist
+mkdir -p "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/ca"
+mkdir -p "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/tlsca"
+mkdir -p "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/ca"
+mkdir -p "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/tlsca"
+
+# Get CA root certs
+curl -sSf -k ${ORDERER_CA_URL}/cainfo | jq -r '.result.CAChain' | base64 -d > "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/ca/ca-cert.pem" 2>/dev/null || \
+  docker cp ca.ordererorg.hot.coc.com:/etc/hyperledger/fabric-ca-server/ca-cert.pem "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/ca/ca-cert.pem"
+
+curl -sSf -k ${ORDERER_TLSCA_URL}/cainfo | jq -r '.result.CAChain' | base64 -d > "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/tlsca/tls-cert.pem" 2>/dev/null || \
+  docker cp tlsca.ordererorg.hot.coc.com:/etc/hyperledger/fabric-ca-server/ca-cert.pem "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/tlsca/tls-cert.pem"
+
+curl -sSf -k ${LABORG_CA_URL}/cainfo | jq -r '.result.CAChain' | base64 -d > "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/ca/ca-cert.pem" 2>/dev/null || \
+  docker cp ca.laborg.hot.coc.com:/etc/hyperledger/fabric-ca-server/ca-cert.pem "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/ca/ca-cert.pem"
+
+curl -sSf -k ${LABORG_TLSCA_URL}/cainfo | jq -r '.result.CAChain' | base64 -d > "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/tlsca/tls-cert.pem" 2>/dev/null || \
+  docker cp tlsca.laborg.hot.coc.com:/etc/hyperledger/fabric-ca-server/ca-cert.pem "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/tlsca/tls-cert.pem"
+
+print_success "CA root certificates obtained"
+
 # OrdererOrg Identity CA Admin
 print_section "Enrolling OrdererOrg Identity CA Admin"
-export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/ordererOrganizations/ordererorg.example.com"
-mkdir -p "${CRYPTO_DIR}/ordererOrganizations/ordererorg.example.com/msp/cacerts"
-fabric-ca-client enroll -u https://${IDENTITY_CA_ADMIN}:${IDENTITY_CA_PASS}@localhost:7054 --caname ca.ordererorg.example.com --tls.certfiles "${CRYPTO_DIR}/ordererOrganizations/ordererorg.example.com/ca/tls-cert.pem"
-
-# Copy CA cert to MSP with consistent naming
-cp "${CRYPTO_DIR}/ordererOrganizations/ordererorg.example.com/msp/cacerts/"* "${CRYPTO_DIR}/ordererOrganizations/ordererorg.example.com/msp/cacerts/ca-ordererorg-example-com.pem"
-
-# OrdererOrg TLS CA Admin
-print_section "Enrolling OrdererOrg TLS CA Admin"
-export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/ordererOrganizations/ordererorg.example.com/tlsca-admin"
-mkdir -p "${CRYPTO_DIR}/ordererOrganizations/ordererorg.example.com/msp/tlscacerts"
-fabric-ca-client enroll -u https://${TLS_CA_ADMIN}:${TLS_CA_PASS}@localhost:8054 --caname tlsca.ordererorg.example.com --tls.certfiles "${CRYPTO_DIR}/ordererOrganizations/ordererorg.example.com/tlsca/tls-cert.pem"
-
-# Copy TLS CA cert to org MSP
-cp "${CRYPTO_DIR}/ordererOrganizations/ordererorg.example.com/tlsca-admin/msp/cacerts/"* "${CRYPTO_DIR}/ordererOrganizations/ordererorg.example.com/msp/tlscacerts/tlsca-ordererorg-example-com.pem"
+export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com"
+fabric-ca-client enroll -u https://${CA_ADMIN}:${CA_ADMIN_PW}@localhost:7054 \
+    --caname ca.ordererorg.hot.coc.com \
+    --tls.certfiles "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/ca/ca-cert.pem"
+print_success "OrdererOrg Identity CA Admin enrolled"
 
 # LabOrg Identity CA Admin
 print_section "Enrolling LabOrg Identity CA Admin"
-export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/peerOrganizations/laborg.example.com"
-mkdir -p "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/msp/cacerts"
-fabric-ca-client enroll -u https://${IDENTITY_CA_ADMIN}:${IDENTITY_CA_PASS}@localhost:7055 --caname ca.laborg.example.com --tls.certfiles "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/ca/tls-cert.pem"
-
-cp "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/msp/cacerts/"* "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/msp/cacerts/ca-laborg-example-com.pem"
-
-# LabOrg TLS CA Admin
-print_section "Enrolling LabOrg TLS CA Admin"
-export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/peerOrganizations/laborg.example.com/tlsca-admin"
-mkdir -p "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/msp/tlscacerts"
-fabric-ca-client enroll -u https://${TLS_CA_ADMIN}:${TLS_CA_PASS}@localhost:8055 --caname tlsca.laborg.example.com --tls.certfiles "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/tlsca/tls-cert.pem"
-
-cp "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/tlsca-admin/msp/cacerts/"* "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/msp/tlscacerts/tlsca-laborg-example-com.pem"
-
-# CourtOrg Identity CA Admin
-print_section "Enrolling CourtOrg Identity CA Admin"
-export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/peerOrganizations/courtorg.example.com"
-mkdir -p "${CRYPTO_DIR}/peerOrganizations/courtorg.example.com/msp/cacerts"
-fabric-ca-client enroll -u https://${IDENTITY_CA_ADMIN}:${IDENTITY_CA_PASS}@localhost:7056 --caname ca.courtorg.example.com --tls.certfiles "${CRYPTO_DIR}/peerOrganizations/courtorg.example.com/ca/tls-cert.pem"
-
-cp "${CRYPTO_DIR}/peerOrganizations/courtorg.example.com/msp/cacerts/"* "${CRYPTO_DIR}/peerOrganizations/courtorg.example.com/msp/cacerts/ca-courtorg-example-com.pem"
-
-# CourtOrg TLS CA Admin
-print_section "Enrolling CourtOrg TLS CA Admin"
-export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/peerOrganizations/courtorg.example.com/tlsca-admin"
-mkdir -p "${CRYPTO_DIR}/peerOrganizations/courtorg.example.com/msp/tlscacerts"
-fabric-ca-client enroll -u https://${TLS_CA_ADMIN}:${TLS_CA_PASS}@localhost:8056 --caname tlsca.courtorg.example.com --tls.certfiles "${CRYPTO_DIR}/peerOrganizations/courtorg.example.com/tlsca/tls-cert.pem"
-
-cp "${CRYPTO_DIR}/peerOrganizations/courtorg.example.com/tlsca-admin/msp/cacerts/"* "${CRYPTO_DIR}/peerOrganizations/courtorg.example.com/msp/tlscacerts/tlsca-courtorg-example-com.pem"
+export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com"
+fabric-ca-client enroll -u https://${CA_ADMIN}:${CA_ADMIN_PW}@localhost:7055 \
+    --caname ca.laborg.hot.coc.com \
+    --tls.certfiles "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/ca/ca-cert.pem"
+print_success "LabOrg Identity CA Admin enrolled"
 
 # ============================================================================
-# STEP 3: Register and enroll all identities
+# STEP 3: Register Identities
 # ============================================================================
 
-print_section "STEP 3: Registering and enrolling identities"
+print_section "STEP 3: Registering Identities"
 
-# ============================================================================
-# OrdererOrg Identities
-# ============================================================================
-
+# Register OrdererOrg identities
 print_section "Registering OrdererOrg identities"
+export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com"
 
-export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/ordererOrganizations/ordererorg.example.com"
+fabric-ca-client register --caname ca.ordererorg.hot.coc.com \
+    --id.name orderer.hot.coc.com \
+    --id.secret ordererpw \
+    --id.type orderer \
+    --tls.certfiles "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/ca/ca-cert.pem"
 
-# Register orderer1.ordererorg.example.com
-fabric-ca-client register --caname ca.ordererorg.example.com --id.name orderer1.ordererorg.example.com --id.secret orderer1pw --id.type orderer --tls.certfiles "${CRYPTO_DIR}/ordererOrganizations/ordererorg.example.com/ca/tls-cert.pem"
+fabric-ca-client register --caname ca.ordererorg.hot.coc.com \
+    --id.name orderer-admin \
+    --id.secret ordereradminpw \
+    --id.type admin \
+    --id.attrs "hf.Registrar.Roles=admin,hf.Revoker=true,admin=true:ecert" \
+    --tls.certfiles "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/ca/ca-cert.pem"
 
-# Register orderer-admin@ordererorg.example.com
-fabric-ca-client register --caname ca.ordererorg.example.com --id.name orderer-admin@ordererorg.example.com --id.secret ordereradminpw --id.type admin --id.attrs "admin=true:ecert" --tls.certfiles "${CRYPTO_DIR}/ordererOrganizations/ordererorg.example.com/ca/tls-cert.pem"
+print_success "OrdererOrg identities registered"
 
-print_section "Enrolling orderer1.ordererorg.example.com"
-export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/ordererOrganizations/ordererorg.example.com/orderers/orderer1.ordererorg.example.com"
-fabric-ca-client enroll -u https://orderer1.ordererorg.example.com:orderer1pw@localhost:7054 --caname ca.ordererorg.example.com -M "${CRYPTO_DIR}/ordererOrganizations/ordererorg.example.com/orderers/orderer1.ordererorg.example.com/msp" --csr.hosts orderer1.ordererorg.example.com --csr.hosts localhost --tls.certfiles "${CRYPTO_DIR}/ordererOrganizations/ordererorg.example.com/ca/tls-cert.pem"
+# Register LabOrg identities
+print_section "Registering LabOrg identities"
+export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com"
 
-# Copy NodeOUs config
-cp "${CRYPTO_DIR}/ordererOrganizations/ordererorg.example.com/msp/config.yaml" "${CRYPTO_DIR}/ordererOrganizations/ordererorg.example.com/orderers/orderer1.ordererorg.example.com/msp/config.yaml"
+fabric-ca-client register --caname ca.laborg.hot.coc.com \
+    --id.name peer0.laborg.hot.coc.com \
+    --id.secret peer0pw \
+    --id.type peer \
+    --tls.certfiles "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/ca/ca-cert.pem"
 
-print_section "Enrolling orderer1 TLS certificate"
-mkdir -p "${CRYPTO_DIR}/ordererOrganizations/ordererorg.example.com/orderers/orderer1.ordererorg.example.com/tls"
-fabric-ca-client enroll -u https://orderer1.ordererorg.example.com:orderer1pw@localhost:8054 --caname tlsca.ordererorg.example.com -M "${CRYPTO_DIR}/ordererOrganizations/ordererorg.example.com/orderers/orderer1.ordererorg.example.com/tls" --enrollment.profile tls --csr.hosts orderer1.ordererorg.example.com --csr.hosts localhost --tls.certfiles "${CRYPTO_DIR}/ordererOrganizations/ordererorg.example.com/tlsca/tls-cert.pem"
+fabric-ca-client register --caname ca.laborg.hot.coc.com \
+    --id.name lab-admin \
+    --id.secret labadminpw \
+    --id.type admin \
+    --id.attrs "hf.Registrar.Roles=admin,hf.Revoker=true,admin=true:ecert" \
+    --tls.certfiles "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/ca/ca-cert.pem"
 
-# Copy TLS certs to proper locations
-cp "${CRYPTO_DIR}/ordererOrganizations/ordererorg.example.com/orderers/orderer1.ordererorg.example.com/tls/tlscacerts/"* "${CRYPTO_DIR}/ordererOrganizations/ordererorg.example.com/orderers/orderer1.ordererorg.example.com/tls/ca.crt"
-cp "${CRYPTO_DIR}/ordererOrganizations/ordererorg.example.com/orderers/orderer1.ordererorg.example.com/tls/signcerts/"* "${CRYPTO_DIR}/ordererOrganizations/ordererorg.example.com/orderers/orderer1.ordererorg.example.com/tls/server.crt"
-cp "${CRYPTO_DIR}/ordererOrganizations/ordererorg.example.com/orderers/orderer1.ordererorg.example.com/tls/keystore/"* "${CRYPTO_DIR}/ordererOrganizations/ordererorg.example.com/orderers/orderer1.ordererorg.example.com/tls/server.key"
+fabric-ca-client register --caname ca.laborg.hot.coc.com \
+    --id.name lab-user \
+    --id.secret labuserpw \
+    --id.type client \
+    --tls.certfiles "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/ca/ca-cert.pem"
 
-print_section "Enrolling orderer-admin@ordererorg.example.com"
-export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/ordererOrganizations/ordererorg.example.com/users/orderer-admin@ordererorg.example.com"
-fabric-ca-client enroll -u https://orderer-admin@ordererorg.example.com:ordereradminpw@localhost:7054 --caname ca.ordererorg.example.com -M "${CRYPTO_DIR}/ordererOrganizations/ordererorg.example.com/users/orderer-admin@ordererorg.example.com/msp" --tls.certfiles "${CRYPTO_DIR}/ordererOrganizations/ordererorg.example.com/ca/tls-cert.pem"
+print_success "LabOrg identities registered"
 
-cp "${CRYPTO_DIR}/ordererOrganizations/ordererorg.example.com/msp/config.yaml" "${CRYPTO_DIR}/ordererOrganizations/ordererorg.example.com/users/orderer-admin@ordererorg.example.com/msp/config.yaml"
+# ============================================================================
+# STEP 4: Enroll Orderer Identity and Build MSP
+# ============================================================================
+
+print_section "STEP 4: Building Orderer MSP"
+
+# Enroll orderer admin
+print_section "Enrolling orderer admin"
+export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com"
+mkdir -p users/orderer-admin
+fabric-ca-client enroll -u https://orderer-admin:ordereradminpw@localhost:7054 \
+    --caname ca.ordererorg.hot.coc.com \
+    --tls.certfiles "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/ca/ca-cert.pem" \
+    --mspdir users/orderer-admin/msp
 
 # Copy admin cert to org MSP admincerts
-mkdir -p "${CRYPTO_DIR}/ordererOrganizations/ordererorg.example.com/msp/admincerts"
-cp "${CRYPTO_DIR}/ordererOrganizations/ordererorg.example.com/users/orderer-admin@ordererorg.example.com/msp/signcerts/"* "${CRYPTO_DIR}/ordererOrganizations/ordererorg.example.com/msp/admincerts/orderer-admin-cert.pem"
+cp "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/users/orderer-admin/msp/signcerts/"* \
+   "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/msp/admincerts/orderer-admin-cert.pem"
+
+# Copy CA cert to org MSP
+cp "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/ca/ca-cert.pem" \
+   "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/msp/cacerts/ca.ordererorg.hot.coc.com-cert.pem"
+
+# Copy TLS CA cert to org MSP
+cp "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/tlsca/tls-cert.pem" \
+   "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/msp/tlscacerts/tlsca.ordererorg.hot.coc.com-cert.pem"
+
+print_success "OrdererOrg MSP built"
+
+# Enroll orderer node
+print_section "Enrolling orderer node"
+export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com"
+mkdir -p orderers/orderer.hot.coc.com
+fabric-ca-client enroll -u https://orderer.hot.coc.com:ordererpw@localhost:7054 \
+    --caname ca.ordererorg.hot.coc.com \
+    --tls.certfiles "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/ca/ca-cert.pem" \
+    --mspdir orderers/orderer.hot.coc.com/msp
+
+# Build orderer local MSP
+ORDERER_MSP="${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/orderers/orderer.hot.coc.com/msp"
+
+# Copy CA cert
+cp "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/ca/ca-cert.pem" \
+   "${ORDERER_MSP}/cacerts/ca.ordererorg.hot.coc.com-cert.pem"
+
+# Copy TLS CA cert
+cp "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/tlsca/tls-cert.pem" \
+   "${ORDERER_MSP}/tlscacerts/tlsca.ordererorg.hot.coc.com-cert.pem"
+
+# Copy admin cert
+cp "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/users/orderer-admin/msp/signcerts/"* \
+   "${ORDERER_MSP}/admincerts/orderer-admin-cert.pem"
+
+# Enroll orderer TLS cert
+print_section "Enrolling orderer TLS certificate"
+export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com"
+fabric-ca-client enroll -u https://orderer.hot.coc.com:ordererpw@localhost:8054 \
+    --caname tlsca.ordererorg.hot.coc.com \
+    --tls.certfiles "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/tlsca/tls-cert.pem" \
+    --enrollment.profile tls \
+    --csr.hosts orderer.hot.coc.com,localhost \
+    --mspdir orderers/orderer.hot.coc.com/tls
+
+# Rename TLS files to standard names
+ORDERER_TLS="${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/orderers/orderer.hot.coc.com/tls"
+cp "${ORDERER_TLS}/signcerts/"* "${ORDERER_TLS}/server.crt"
+cp "${ORDERER_TLS}/keystore/"* "${ORDERER_TLS}/server.key"
+cp "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/tlsca/tls-cert.pem" "${ORDERER_TLS}/ca.crt"
+
+print_success "Orderer MSP and TLS complete"
 
 # ============================================================================
-# LabOrg Identities
+# STEP 5: Enroll Peer Identity and Build MSP
 # ============================================================================
 
-print_section "Registering LabOrg identities"
+print_section "STEP 5: Building LabOrg Peer MSP"
 
-export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/peerOrganizations/laborg.example.com"
+# Enroll lab admin
+print_section "Enrolling lab admin"
+export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com"
+mkdir -p users/lab-admin
+fabric-ca-client enroll -u https://lab-admin:labadminpw@localhost:7055 \
+    --caname ca.laborg.hot.coc.com \
+    --tls.certfiles "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/ca/ca-cert.pem" \
+    --mspdir users/lab-admin/msp
 
-# Register peer0.laborg.example.com
-fabric-ca-client register --caname ca.laborg.example.com --id.name peer0.laborg.example.com --id.secret peer0pw --id.type peer --id.affiliation laborg.dfir --tls.certfiles "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/ca/tls-cert.pem"
+# Copy admin cert to org MSP admincerts
+cp "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/users/lab-admin/msp/signcerts/"* \
+   "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/msp/admincerts/lab-admin-cert.pem"
 
-# Register lab-admin@laborg.example.com
-fabric-ca-client register --caname ca.laborg.example.com --id.name lab-admin@laborg.example.com --id.secret labadminpw --id.type admin --id.affiliation laborg.dfir --id.attrs "admin=true:ecert" --tls.certfiles "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/ca/tls-cert.pem"
+# Copy CA cert to org MSP
+cp "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/ca/ca-cert.pem" \
+   "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/msp/cacerts/ca.laborg.hot.coc.com-cert.pem"
 
-# Register lab-gw@laborg.example.com (Gateway client)
-fabric-ca-client register --caname ca.laborg.example.com --id.name lab-gw@laborg.example.com --id.secret labgwpw --id.type client --id.affiliation laborg.dfir --tls.certfiles "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/ca/tls-cert.pem"
+# Copy TLS CA cert to org MSP
+cp "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/tlsca/tls-cert.pem" \
+   "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/msp/tlscacerts/tlsca.laborg.hot.coc.com-cert.pem"
 
-print_section "Enrolling peer0.laborg.example.com"
-export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/peerOrganizations/laborg.example.com/peers/peer0.laborg.example.com"
-fabric-ca-client enroll -u https://peer0.laborg.example.com:peer0pw@localhost:7055 --caname ca.laborg.example.com -M "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/peers/peer0.laborg.example.com/msp" --csr.hosts peer0.laborg.example.com --csr.hosts localhost --tls.certfiles "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/ca/tls-cert.pem"
+print_success "LabOrg MSP built"
 
-cp "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/msp/config.yaml" "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/peers/peer0.laborg.example.com/msp/config.yaml"
+# Enroll peer node
+print_section "Enrolling peer0.laborg.hot.coc.com"
+export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com"
+mkdir -p peers/peer0.laborg.hot.coc.com
+fabric-ca-client enroll -u https://peer0.laborg.hot.coc.com:peer0pw@localhost:7055 \
+    --caname ca.laborg.hot.coc.com \
+    --tls.certfiles "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/ca/ca-cert.pem" \
+    --mspdir peers/peer0.laborg.hot.coc.com/msp
 
-print_section "Enrolling peer0.laborg TLS certificate"
-mkdir -p "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/peers/peer0.laborg.example.com/tls"
-fabric-ca-client enroll -u https://peer0.laborg.example.com:peer0pw@localhost:8055 --caname tlsca.laborg.example.com -M "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/peers/peer0.laborg.example.com/tls" --enrollment.profile tls --csr.hosts peer0.laborg.example.com --csr.hosts localhost --tls.certfiles "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/tlsca/tls-cert.pem"
+# Build peer local MSP
+PEER_MSP="${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/peers/peer0.laborg.hot.coc.com/msp"
 
-cp "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/peers/peer0.laborg.example.com/tls/tlscacerts/"* "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/peers/peer0.laborg.example.com/tls/ca.crt"
-cp "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/peers/peer0.laborg.example.com/tls/signcerts/"* "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/peers/peer0.laborg.example.com/tls/server.crt"
-cp "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/peers/peer0.laborg.example.com/tls/keystore/"* "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/peers/peer0.laborg.example.com/tls/server.key"
+# Copy CA cert
+cp "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/ca/ca-cert.pem" \
+   "${PEER_MSP}/cacerts/ca.laborg.hot.coc.com-cert.pem"
 
-print_section "Enrolling lab-admin@laborg.example.com"
-export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/peerOrganizations/laborg.example.com/users/lab-admin@laborg.example.com"
-fabric-ca-client enroll -u https://lab-admin@laborg.example.com:labadminpw@localhost:7055 --caname ca.laborg.example.com -M "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/users/lab-admin@laborg.example.com/msp" --tls.certfiles "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/ca/tls-cert.pem"
+# Copy TLS CA cert
+cp "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/tlsca/tls-cert.pem" \
+   "${PEER_MSP}/tlscacerts/tlsca.laborg.hot.coc.com-cert.pem"
 
-cp "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/msp/config.yaml" "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/users/lab-admin@laborg.example.com/msp/config.yaml"
+# Copy admin cert
+cp "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/users/lab-admin/msp/signcerts/"* \
+   "${PEER_MSP}/admincerts/lab-admin-cert.pem"
 
-mkdir -p "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/msp/admincerts"
-cp "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/users/lab-admin@laborg.example.com/msp/signcerts/"* "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/msp/admincerts/lab-admin-cert.pem"
+# Enroll peer TLS cert
+print_section "Enrolling peer TLS certificate"
+export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com"
+fabric-ca-client enroll -u https://peer0.laborg.hot.coc.com:peer0pw@localhost:8055 \
+    --caname tlsca.laborg.hot.coc.com \
+    --tls.certfiles "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/tlsca/tls-cert.pem" \
+    --enrollment.profile tls \
+    --csr.hosts peer0.laborg.hot.coc.com,localhost \
+    --mspdir peers/peer0.laborg.hot.coc.com/tls
 
-print_section "Enrolling lab-gw@laborg.example.com (Gateway client)"
-export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/peerOrganizations/laborg.example.com/users/lab-gw@laborg.example.com"
-fabric-ca-client enroll -u https://lab-gw@laborg.example.com:labgwpw@localhost:7055 --caname ca.laborg.example.com -M "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/users/lab-gw@laborg.example.com/msp" --tls.certfiles "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/ca/tls-cert.pem"
+# Rename TLS files to standard names
+PEER_TLS="${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/peers/peer0.laborg.hot.coc.com/tls"
+cp "${PEER_TLS}/signcerts/"* "${PEER_TLS}/server.crt"
+cp "${PEER_TLS}/keystore/"* "${PEER_TLS}/server.key"
+cp "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/tlsca/tls-cert.pem" "${PEER_TLS}/ca.crt"
 
-cp "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/msp/config.yaml" "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/users/lab-gw@laborg.example.com/msp/config.yaml"
+print_success "Peer0 MSP and TLS complete"
 
-# Optional: Enroll TLS cert for lab-gw if client mTLS is needed
-mkdir -p "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/users/lab-gw@laborg.example.com/tls"
-fabric-ca-client enroll -u https://lab-gw@laborg.example.com:labgwpw@localhost:8055 --caname tlsca.laborg.example.com -M "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/users/lab-gw@laborg.example.com/tls" --enrollment.profile tls --csr.hosts localhost --tls.certfiles "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/tlsca/tls-cert.pem"
+# Enroll lab user
+print_section "Enrolling lab user"
+export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com"
+mkdir -p users/lab-user
+fabric-ca-client enroll -u https://lab-user:labuserpw@localhost:7055 \
+    --caname ca.laborg.hot.coc.com \
+    --tls.certfiles "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/ca/ca-cert.pem" \
+    --mspdir users/lab-user/msp
 
-# ============================================================================
-# CourtOrg Identities
-# ============================================================================
-
-print_section "Registering CourtOrg identities"
-
-export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/peerOrganizations/courtorg.example.com"
-
-# Register peer0.courtorg.example.com
-fabric-ca-client register --caname ca.courtorg.example.com --id.name peer0.courtorg.example.com --id.secret peer0pw --id.type peer --id.affiliation courtorg.legal --tls.certfiles "${CRYPTO_DIR}/peerOrganizations/courtorg.example.com/ca/tls-cert.pem"
-
-# Register court-admin@courtorg.example.com
-fabric-ca-client register --caname ca.courtorg.example.com --id.name court-admin@courtorg.example.com --id.secret courtadminpw --id.type admin --id.affiliation courtorg.legal --id.attrs "admin=true:ecert" --tls.certfiles "${CRYPTO_DIR}/peerOrganizations/courtorg.example.com/ca/tls-cert.pem"
-
-print_section "Enrolling peer0.courtorg.example.com"
-export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/peerOrganizations/courtorg.example.com/peers/peer0.courtorg.example.com"
-fabric-ca-client enroll -u https://peer0.courtorg.example.com:peer0pw@localhost:7056 --caname ca.courtorg.example.com -M "${CRYPTO_DIR}/peerOrganizations/courtorg.example.com/peers/peer0.courtorg.example.com/msp" --csr.hosts peer0.courtorg.example.com --csr.hosts localhost --tls.certfiles "${CRYPTO_DIR}/peerOrganizations/courtorg.example.com/ca/tls-cert.pem"
-
-cp "${CRYPTO_DIR}/peerOrganizations/courtorg.example.com/msp/config.yaml" "${CRYPTO_DIR}/peerOrganizations/courtorg.example.com/peers/peer0.courtorg.example.com/msp/config.yaml"
-
-print_section "Enrolling peer0.courtorg TLS certificate"
-mkdir -p "${CRYPTO_DIR}/peerOrganizations/courtorg.example.com/peers/peer0.courtorg.example.com/tls"
-fabric-ca-client enroll -u https://peer0.courtorg.example.com:peer0pw@localhost:8056 --caname tlsca.courtorg.example.com -M "${CRYPTO_DIR}/peerOrganizations/courtorg.example.com/peers/peer0.courtorg.example.com/tls" --enrollment.profile tls --csr.hosts peer0.courtorg.example.com --csr.hosts localhost --tls.certfiles "${CRYPTO_DIR}/peerOrganizations/courtorg.example.com/tlsca/tls-cert.pem"
-
-cp "${CRYPTO_DIR}/peerOrganizations/courtorg.example.com/peers/peer0.courtorg.example.com/tls/tlscacerts/"* "${CRYPTO_DIR}/peerOrganizations/courtorg.example.com/peers/peer0.courtorg.example.com/tls/ca.crt"
-cp "${CRYPTO_DIR}/peerOrganizations/courtorg.example.com/peers/peer0.courtorg.example.com/tls/signcerts/"* "${CRYPTO_DIR}/peerOrganizations/courtorg.example.com/peers/peer0.courtorg.example.com/tls/server.crt"
-cp "${CRYPTO_DIR}/peerOrganizations/courtorg.example.com/peers/peer0.courtorg.example.com/tls/keystore/"* "${CRYPTO_DIR}/peerOrganizations/courtorg.example.com/peers/peer0.courtorg.example.com/tls/server.key"
-
-print_section "Enrolling court-admin@courtorg.example.com"
-export FABRIC_CA_CLIENT_HOME="${CRYPTO_DIR}/peerOrganizations/courtorg.example.com/users/court-admin@courtorg.example.com"
-fabric-ca-client enroll -u https://court-admin@courtorg.example.com:courtadminpw@localhost:7056 --caname ca.courtorg.example.com -M "${CRYPTO_DIR}/peerOrganizations/courtorg.example.com/users/court-admin@courtorg.example.com/msp" --tls.certfiles "${CRYPTO_DIR}/peerOrganizations/courtorg.example.com/ca/tls-cert.pem"
-
-cp "${CRYPTO_DIR}/peerOrganizations/courtorg.example.com/msp/config.yaml" "${CRYPTO_DIR}/peerOrganizations/courtorg.example.com/users/court-admin@courtorg.example.com/msp/config.yaml"
-
-mkdir -p "${CRYPTO_DIR}/peerOrganizations/courtorg.example.com/msp/admincerts"
-cp "${CRYPTO_DIR}/peerOrganizations/courtorg.example.com/users/court-admin@courtorg.example.com/msp/signcerts/"* "${CRYPTO_DIR}/peerOrganizations/courtorg.example.com/msp/admincerts/court-admin-cert.pem"
+print_success "Lab user enrolled"
 
 # ============================================================================
-# STEP 4: Verification
+# STEP 6: Create TLS Trust Bundles
 # ============================================================================
 
-print_section "STEP 4: Verifying generated crypto material"
+print_section "STEP 6: Creating TLS Trust Bundles"
 
-verify_msp() {
-    local msp_path=$1
-    local org_name=$2
+# Create combined TLS CA bundle for mutual trust
+TLS_BUNDLE_DIR="${CRYPTO_DIR}/tls-bundle"
+mkdir -p "${TLS_BUNDLE_DIR}"
 
-    if [ ! -d "$msp_path/cacerts" ] || [ ! -d "$msp_path/keystore" ] || [ ! -d "$msp_path/signcerts" ]; then
-        echo -e "${RED}ERROR: Missing required directories in $org_name MSP${NC}"
-        return 1
-    fi
+cat "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/tlsca/tls-cert.pem" \
+    "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/tlsca/tls-cert.pem" \
+    > "${TLS_BUNDLE_DIR}/hot-chain-tls-ca-bundle.pem"
 
-    if [ ! -f "$msp_path/config.yaml" ]; then
-        echo -e "${RED}ERROR: Missing config.yaml in $org_name MSP${NC}"
-        return 1
-    fi
+print_success "TLS trust bundle created"
 
-    echo -e "${GREEN}✓ $org_name MSP structure verified${NC}"
-    return 0
-}
-
-# Verify all MSPs
-verify_msp "${CRYPTO_DIR}/ordererOrganizations/ordererorg.example.com/orderers/orderer1.ordererorg.example.com/msp" "orderer1"
-verify_msp "${CRYPTO_DIR}/peerOrganizations/laborg.example.com/peers/peer0.laborg.example.com/msp" "peer0.laborg"
-verify_msp "${CRYPTO_DIR}/peerOrganizations/courtorg.example.com/peers/peer0.courtorg.example.com/msp" "peer0.courtorg"
+# ============================================================================
+# Summary
+# ============================================================================
 
 echo ""
-echo -e "${GREEN}===== Crypto Material Generation Complete! =====${NC}"
+echo -e "${GREEN}========================================${NC}"
+echo -e "${GREEN}  Crypto Generation Complete!${NC}"
+echo -e "${GREEN}========================================${NC}"
 echo ""
-echo "Summary:"
-echo "  - 3 Organizations (OrdererOrg, LabOrg, CourtOrg)"
-echo "  - 1 Orderer node (orderer1.ordererorg.example.com)"
-echo "  - 2 Peer nodes (peer0.laborg.example.com, peer0.courtorg.example.com)"
-echo "  - 3 Admin identities"
-echo "  - 1 Gateway client (lab-gw@laborg.example.com)"
+echo -e "${BLUE}Summary:${NC}"
+echo "  ✓ 2 Organizations configured (OrdererOrg, LabOrg)"
+echo "  ✓ 1 Orderer node with MSP and TLS"
+echo "  ✓ 1 Peer node with MSP and TLS"
+echo "  ✓ 3 Users enrolled (orderer-admin, lab-admin, lab-user)"
+echo "  ✓ TLS trust bundles created"
 echo ""
-echo "Next steps:"
-echo "  1. Generate channel genesis blocks: ./scripts/generate-genesis.sh"
-echo "  2. Start network containers: docker-compose up -d"
-echo "  3. Create and join channels"
+echo -e "${YELLOW}Next steps:${NC}"
+echo "  1. Verify crypto structure: tree -L 4 crypto-config/"
+echo "  2. Start the network: docker-compose -f docker-compose-network.yaml up -d"
+echo "  3. Create channel and join peers"
 echo ""
