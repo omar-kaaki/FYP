@@ -29,6 +29,11 @@ echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}  FYP Blockchain - Prerequisites Setup${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
+echo -e "${YELLOW}⚠️  IMPORTANT: After this script completes:${NC}"
+echo -e "${YELLOW}    - DO NOT run 'source ~/.bashrc'${NC}"
+echo -e "${YELLOW}    - Instead, open a NEW terminal window${NC}"
+echo -e "${YELLOW}    - This avoids shell environment issues${NC}"
+echo ""
 echo "This script will install:"
 echo "  - Docker and Docker Compose"
 echo "  - Go ${GO_VERSION}"
@@ -61,6 +66,11 @@ print_success() {
 # Function to print error
 print_error() {
     echo -e "${RED}✗ $1${NC}"
+}
+
+# Function to print info
+print_info() {
+    echo -e "${BLUE}ℹ $1${NC}"
 }
 
 # Function to check if command exists
@@ -357,19 +367,74 @@ fi
 # Install global packages for development
 # Ensure nvm is loaded
 export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
-# Add nvm to PATH if not already there
-if [[ ":$PATH:" != *":$NVM_DIR:"* ]]; then
-    export PATH="$NVM_DIR/versions/node/$(nvm version)/bin:$PATH"
+# Check if nvm directory exists
+if [ ! -d "$NVM_DIR" ]; then
+    print_error "nvm directory not found at $NVM_DIR"
+    print_info "This might indicate nvm installation failed"
+    print_info "Please check the installation logs above"
+    exit 1
 fi
 
-# Verify npm is available after nvm load
-if ! command_exists npm; then
-    print_error "npm not found after loading nvm"
-    print_info "Please run: source ~/.bashrc"
-    print_info "Then re-run this script"
+# Source nvm script
+if [ -s "$NVM_DIR/nvm.sh" ]; then
+    \. "$NVM_DIR/nvm.sh"
+else
+    print_error "nvm.sh not found"
     exit 1
+fi
+
+# Add Node.js to PATH manually (find the installed version directory)
+if [ -d "$NVM_DIR/versions/node" ]; then
+    # Get the latest/current Node.js version directory
+    NODE_DIR=$(find "$NVM_DIR/versions/node" -maxdepth 1 -type d -name "v*" | sort -V | tail -n 1)
+    if [ -n "$NODE_DIR" ] && [ -d "$NODE_DIR/bin" ]; then
+        export PATH="$NODE_DIR/bin:$PATH"
+        print_info "Added Node.js to PATH: $NODE_DIR/bin"
+    fi
+fi
+
+# Verify npm is available
+if ! command_exists npm; then
+    print_error "npm not found in PATH after loading nvm"
+
+    # Try to find npm manually
+    if [ -d "$NVM_DIR/versions/node" ]; then
+        NPM_PATH=$(find "$NVM_DIR/versions/node" -name npm -type f | head -n 1)
+        if [ -n "$NPM_PATH" ]; then
+            print_info "Found npm at: $NPM_PATH"
+            # Test if it works
+            if "$NPM_PATH" --version &>/dev/null; then
+                print_success "npm is installed and working"
+                # Add to PATH
+                NPM_BIN_DIR=$(dirname "$NPM_PATH")
+                export PATH="$NPM_BIN_DIR:$PATH"
+                print_info "Added npm to PATH: $NPM_BIN_DIR"
+            fi
+        fi
+    fi
+
+    # Check again after manual PATH fix
+    if ! command_exists npm; then
+        print_error "npm not found after all attempts"
+        echo ""
+        print_info "Troubleshooting steps:"
+        print_info "1. Close this terminal and open a NEW terminal window"
+        print_info "2. Run: cd ~/FYPBcoc"
+        print_info "3. Verify Node.js: node --version"
+        print_info "4. Verify npm: npm --version"
+        print_info "5. If both work, the installation was successful!"
+        print_info "6. Continue with: ./setup.sh"
+        echo ""
+        print_info "If npm doesn't work in new terminal, manually load nvm:"
+        print_info "  export NVM_DIR=\"\$HOME/.nvm\""
+        print_info "  [ -s \"\$NVM_DIR/nvm.sh\" ] && \\. \"\$NVM_DIR/nvm.sh\""
+        print_info "  npm --version"
+        echo ""
+        echo -e "${YELLOW}NOTE: This error might be a PATH issue in the current shell.${NC}"
+        echo -e "${YELLOW}      Try opening a new terminal to verify npm works.${NC}"
+        exit 1
+    fi
 fi
 
 # Install TypeScript globally (command is 'tsc', not 'typescript')
@@ -597,13 +662,14 @@ echo -e "${GREEN}All prerequisites have been installed successfully!${NC}"
 echo ""
 echo -e "${YELLOW}IMPORTANT NEXT STEPS:${NC}"
 echo ""
-echo "1. Reload your shell configuration:"
-echo "   ${BLUE}source ~/.bashrc${NC}"
+echo "1. ${YELLOW}DO NOT run 'source ~/.bashrc' in this terminal${NC}"
+echo "   ${BLUE}Instead: Open a NEW terminal window/tab${NC}"
+echo "   (sourcing ~/.bashrc multiple times can cause issues)"
 echo ""
 echo "2. If you added your user to the docker group, log out and back in"
 echo "   Or run: ${BLUE}newgrp docker${NC}"
 echo ""
-echo "3. Verify installations:"
+echo "3. In a NEW terminal, verify installations:"
 echo "   ${BLUE}docker --version${NC}"
 echo "   ${BLUE}docker-compose --version${NC}"
 echo "   ${BLUE}go version${NC}"
