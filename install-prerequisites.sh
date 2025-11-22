@@ -498,8 +498,22 @@ cd "$PROJECT_DIR"
 # Download Fabric binaries
 if [ -f "bin/fabric-ca-client" ] && [ -f "bin/configtxgen" ] && [ -f "bin/peer" ]; then
     print_success "Fabric binaries already exist in bin/"
+    # Clean up fabric-samples if it exists from previous run
+    if [ -d "fabric-samples" ]; then
+        print_info "Cleaning up fabric-samples directory from previous run"
+        rm -rf fabric-samples
+    fi
+elif [ -d "fabric-samples/bin" ]; then
+    # Binaries were downloaded in previous run but not moved yet
+    print_info "Found binaries in fabric-samples/bin from previous run"
+    print_info "Moving binaries from fabric-samples/bin to bin/"
+    mkdir -p bin
+    mv fabric-samples/bin/* bin/
+    rm -rf fabric-samples
+    print_success "Fabric binaries moved to bin/"
 else
     # Download binaries (they go to fabric-samples/bin by default)
+    print_info "Downloading Fabric binaries..."
     curl -sSL https://raw.githubusercontent.com/hyperledger/fabric/main/scripts/install-fabric.sh | bash -s -- binary ${FABRIC_VERSION} ${FABRIC_CA_VERSION}
 
     # Move binaries from fabric-samples/bin to bin/
@@ -527,8 +541,13 @@ export PATH=$PATH:$PROJECT_DIR/bin
 read -p "Copy binaries to /usr/local/bin for system-wide access? (y/n): " -n 1 -r
 echo
 if [[ $REPLY =~ ^[Yy]$ ]]; then
-    sudo cp bin/* /usr/local/bin/
-    print_success "Binaries copied to /usr/local/bin"
+    if [ -d "bin" ] && [ "$(ls -A bin 2>/dev/null)" ]; then
+        sudo cp bin/* /usr/local/bin/
+        print_success "Binaries copied to /usr/local/bin"
+    else
+        print_error "bin/ directory is empty or doesn't exist"
+        exit 1
+    fi
 fi
 
 # ============================================================================
