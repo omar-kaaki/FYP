@@ -33,7 +33,7 @@ services:
 
       # Client TLS (mutual TLS)
       - ORDERER_GENERAL_TLS_CLIENTAUTHREQUIRED=true
-      - ORDERER_GENERAL_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/clientroots/tlsca.laborg.pem]
+      - ORDERER_GENERAL_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/clientroots/tls-cert.pem]
 
       # Cluster TLS (for Raft)
       - ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE=/var/hyperledger/orderer/tls/server.crt
@@ -116,7 +116,7 @@ services:
       - CORE_PEER_TLS_CLIENTAUTHREQUIRED=true
       - CORE_PEER_TLS_CLIENTCERT_FILE=/var/hyperledger/peer/tls/server.crt
       - CORE_PEER_TLS_CLIENTKEY_FILE=/var/hyperledger/peer/tls/server.key
-      - CORE_PEER_TLS_CLIENTROOTCAS_FILES=/var/hyperledger/peer/tls/ca.crt /var/hyperledger/peer/tls/peerroots/tlsca.ordererorg.pem
+      - CORE_PEER_TLS_CLIENTROOTCAS_FILES=/var/hyperledger/peer/tls/ca.crt /var/hyperledger/peer/tls/peerroots/tls-cert.pem
 
       # Gossip TLS
       - CORE_PEER_GOSSIP_USELEADERELECTION=true

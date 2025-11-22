@@ -35,7 +35,7 @@ services:
 
       # Client TLS (mutual TLS) - Trust both LabOrg and CourtOrg
       - ORDERER_GENERAL_TLS_CLIENTAUTHREQUIRED=true
-      - ORDERER_GENERAL_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/clientroots/tlsca.laborg.pem,/var/hyperledger/orderer/tls/clientroots/tlsca.courtorg.pem]
+      - ORDERER_GENERAL_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/clientroots/laborg/tls-cert.pem,/var/hyperledger/orderer/tls/clientroots/courtorg/tls-cert.pem]
 
       # Cluster TLS (for Raft)
       - ORDERER_GENERAL_CLUSTER_CLIENTCERTIFICATE=/var/hyperledger/orderer/tls/server.crt
@@ -119,7 +119,7 @@ services:
       - CORE_PEER_TLS_CLIENTAUTHREQUIRED=true
       - CORE_PEER_TLS_CLIENTCERT_FILE=/var/hyperledger/peer/tls/server.crt
       - CORE_PEER_TLS_CLIENTKEY_FILE=/var/hyperledger/peer/tls/server.key
-      - CORE_PEER_TLS_CLIENTROOTCAS_FILES=/var/hyperledger/peer/tls/ca.crt /var/hyperledger/peer/tls/peerroots/tlsca.ordererorg.pem /var/hyperledger/peer/tls/peerroots/tlsca.courtorg.pem
+      - CORE_PEER_TLS_CLIENTROOTCAS_FILES=/var/hyperledger/peer/tls/ca.crt /var/hyperledger/peer/tls/peerroots/orderer/tls-cert.pem /var/hyperledger/peer/tls/peerroots/court/tls-cert.pem
 
       # Gossip TLS
       - CORE_PEER_GOSSIP_USELEADERELECTION=true
@@ -208,7 +208,7 @@ services:
       - CORE_PEER_TLS_CLIENTAUTHREQUIRED=true
       - CORE_PEER_TLS_CLIENTCERT_FILE=/var/hyperledger/peer/tls/server.crt
       - CORE_PEER_TLS_CLIENTKEY_FILE=/var/hyperledger/peer/tls/server.key
-      - CORE_PEER_TLS_CLIENTROOTCAS_FILES=/var/hyperledger/peer/tls/ca.crt /var/hyperledger/peer/tls/peerroots/tlsca.ordererorg.pem /var/hyperledger/peer/tls/peerroots/tlsca.laborg.pem
+      - CORE_PEER_TLS_CLIENTROOTCAS_FILES=/var/hyperledger/peer/tls/ca.crt /var/hyperledger/peer/tls/peerroots/orderer/tls-cert.pem /var/hyperledger/peer/tls/peerroots/lab/tls-cert.pem
 
       # Gossip TLS
       - CORE_PEER_GOSSIP_USELEADERELECTION=true
