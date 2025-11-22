@@ -32,11 +32,12 @@ echo ""
 echo "This script will install:"
 echo "  - Docker and Docker Compose"
 echo "  - Go ${GO_VERSION}"
-echo "  - Node.js ${NODE_VERSION}.x LTS (optional)"
+echo "  - Node.js ${NODE_VERSION}.x LTS (required for Evidence Upload Service)"
 echo "  - Hyperledger Fabric ${FABRIC_VERSION} binaries"
 echo "  - Hyperledger Fabric CA ${FABRIC_CA_VERSION}"
-echo "  - Required Docker images"
-echo "  - Essential tools (jq, tree, etc.)"
+echo "  - Nginx (HTTPS reverse proxy for IPFS)"
+echo "  - Required Docker images (Fabric, CouchDB, IPFS Kubo)"
+echo "  - Essential tools (jq, tree, openssl, etc.)"
 echo ""
 read -p "Continue with installation? (y/n): " -n 1 -r
 echo
@@ -303,18 +304,20 @@ export PATH=$PATH:/usr/local/go/bin
 export PATH=$PATH:$HOME/go/bin
 
 # ============================================================================
-# STEP 4: Install Node.js (Optional)
+# STEP 4: Install Node.js (Required for Evidence Upload Service)
 # ============================================================================
 
-print_section "STEP 4: Installing Node.js ${NODE_VERSION}.x LTS (Optional)"
+print_section "STEP 4: Installing Node.js ${NODE_VERSION}.x LTS"
 
-read -p "Do you want to install Node.js ${NODE_VERSION}.x LTS? (y/n): " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    if command_exists node; then
+if command_exists node; then
+    CURRENT_NODE_VERSION=$(node --version | sed 's/v//' | cut -d. -f1)
+    if [[ "$CURRENT_NODE_VERSION" -ge "${NODE_VERSION}" ]]; then
         print_success "Node.js is already installed ($(node --version))"
     else
-        # Install nvm
+        echo "Current Node.js version: $(node --version)"
+        echo "Upgrading to Node.js ${NODE_VERSION}.x..."
+
+        # Install nvm if not present
         if [ ! -d "$HOME/.nvm" ]; then
             curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/${NVM_VERSION}/install.sh | bash
             export NVM_DIR="$HOME/.nvm"
@@ -322,7 +325,6 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
             print_success "nvm installed"
         fi
 
-        # Install Node.js
         export NVM_DIR="$HOME/.nvm"
         [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 
@@ -333,7 +335,41 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
         print_success "Node.js ${NODE_VERSION}.x installed"
     fi
 else
-    echo "Skipping Node.js installation"
+    # Install nvm
+    if [ ! -d "$HOME/.nvm" ]; then
+        curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/${NVM_VERSION}/install.sh | bash
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+        print_success "nvm installed"
+    fi
+
+    # Install Node.js
+    export NVM_DIR="$HOME/.nvm"
+    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+    nvm install ${NODE_VERSION}
+    nvm use ${NODE_VERSION}
+    nvm alias default ${NODE_VERSION}
+
+    print_success "Node.js ${NODE_VERSION}.x installed"
+fi
+
+# Install global packages for development
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+
+if ! command_exists typescript; then
+    npm install -g typescript
+    print_success "TypeScript installed globally"
+else
+    print_success "TypeScript is already installed ($(tsc --version))"
+fi
+
+if ! command_exists ts-node; then
+    npm install -g ts-node
+    print_success "ts-node installed globally"
+else
+    print_success "ts-node is already installed"
 fi
 
 # ============================================================================
@@ -379,6 +415,28 @@ if [[ $REPLY =~ ^[Yy]$ ]]; then
 fi
 
 # ============================================================================
+# STEP 5.5: Install Nginx (HTTPS Reverse Proxy for IPFS)
+# ============================================================================
+
+print_section "STEP 5.5: Installing Nginx"
+
+if command_exists nginx; then
+    print_success "Nginx is already installed ($(nginx -v 2>&1))"
+else
+    sudo apt install -y nginx
+    print_success "Nginx installed successfully"
+fi
+
+# Enable nginx service
+if sudo systemctl is-active --quiet nginx; then
+    print_success "Nginx service is running"
+else
+    sudo systemctl enable nginx
+    sudo systemctl start nginx
+    print_success "Nginx service enabled and started"
+fi
+
+# ============================================================================
 # STEP 6: Pull Docker Images
 # ============================================================================
 
@@ -410,13 +468,14 @@ print_section "STEP 7: Pulling additional Docker images"
 docker pull couchdb:3.3
 print_success "CouchDB 3.3 image pulled"
 
-# IPFS (optional)
-read -p "Pull IPFS Kubo image? (y/n): " -n 1 -r
-echo
-if [[ $REPLY =~ ^[Yy]$ ]]; then
-    docker pull ipfs/kubo:latest
-    print_success "IPFS Kubo image pulled"
-fi
+# IPFS Kubo (required for evidence storage)
+docker pull ipfs/kubo:v0.24.0
+docker tag ipfs/kubo:v0.24.0 ipfs/kubo:latest
+print_success "IPFS Kubo v0.24.0 image pulled and tagged"
+
+# Nginx (for IPFS reverse proxy)
+docker pull nginx:1.25-alpine
+print_success "Nginx 1.25 Alpine image pulled"
 
 # ============================================================================
 # STEP 8: Verification
@@ -448,10 +507,33 @@ else
     print_error "Go not found"
 fi
 
-# Node.js (if installed)
+# Node.js
 if command_exists node; then
     print_success "Node.js: $(node --version)"
     print_success "npm: $(npm --version)"
+
+    # TypeScript
+    if command_exists tsc; then
+        print_success "TypeScript: $(tsc --version)"
+    else
+        print_error "TypeScript not found"
+    fi
+
+    # ts-node
+    if command_exists ts-node; then
+        print_success "ts-node: installed"
+    else
+        print_error "ts-node not found"
+    fi
+else
+    print_error "Node.js not found"
+fi
+
+# Nginx
+if command_exists nginx; then
+    print_success "Nginx: $(nginx -v 2>&1)"
+else
+    print_error "Nginx not found"
 fi
 
 # Fabric tools
@@ -501,16 +583,50 @@ echo "3. Verify installations:"
 echo "   ${BLUE}docker --version${NC}"
 echo "   ${BLUE}docker-compose --version${NC}"
 echo "   ${BLUE}go version${NC}"
+echo "   ${BLUE}node --version${NC}"
+echo "   ${BLUE}tsc --version${NC}"
+echo "   ${BLUE}nginx -v${NC}"
 echo "   ${BLUE}fabric-ca-client version${NC}"
 echo "   ${BLUE}peer version${NC}"
 echo ""
-echo "4. Review project structure:"
+echo "4. Run comprehensive tests:"
 echo "   ${BLUE}cd ~/FYPBcoc${NC}"
-echo "   ${BLUE}ls -la${NC}"
+echo "   ${BLUE}./test-all.sh${NC}"
 echo ""
-echo "5. For testing and deployment instructions, see:"
-echo "   - requirements.md (detailed documentation)"
+echo "5. Build evidence upload service:"
+echo "   ${BLUE}cd ~/FYPBcoc/ipfs-storage/evidence-upload-service${NC}"
+echo "   ${BLUE}npm install${NC}"
+echo "   ${BLUE}npm run build${NC}"
+echo ""
+echo "6. For deployment instructions, see:"
+echo "   - requirements.md (comprehensive guide with Sections 1-8)"
 echo "   - requirements.txt (quick reference)"
+echo "   - INTEGRATION_JUMPSERVER.md (JumpServer integration)"
 echo ""
-echo -e "${GREEN}Installation complete!${NC}"
+echo "7. Quick deployment workflow:"
+echo "   a. Start CA infrastructure:"
+echo "      ${BLUE}cd hot-blockchain && docker-compose -f docker-compose-ca.yaml up -d${NC}"
+echo "      ${BLUE}cd cold-blockchain && docker-compose -f docker-compose-ca.yaml up -d${NC}"
+echo ""
+echo "   b. Generate crypto materials:"
+echo "      ${BLUE}cd hot-blockchain && ./scripts/generate-crypto.sh${NC}"
+echo "      ${BLUE}cd cold-blockchain && ./scripts/generate-crypto.sh${NC}"
+echo ""
+echo "   c. Generate channel artifacts:"
+echo "      ${BLUE}cd hot-blockchain && ./scripts/generate-channel-artifacts.sh${NC}"
+echo "      ${BLUE}cd cold-blockchain && ./scripts/generate-channel-artifacts.sh${NC}"
+echo ""
+echo "   d. Start blockchain networks:"
+echo "      ${BLUE}cd hot-blockchain && ./scripts/start-network.sh${NC}"
+echo "      ${BLUE}cd cold-blockchain && ./scripts/start-network.sh${NC}"
+echo ""
+echo "   e. Deploy chaincode:"
+echo "      ${BLUE}cd coc_chaincode && ./build.sh${NC}"
+echo "      ${BLUE}cd ../hot-blockchain && ./scripts/deploy-chaincode.sh${NC}"
+echo "      ${BLUE}cd ../cold-blockchain && ./scripts/deploy-chaincode.sh${NC}"
+echo ""
+echo "   f. Start IPFS infrastructure:"
+echo "      ${BLUE}cd ipfs-storage && ./start-ipfs.sh${NC}"
+echo ""
+echo -e "${GREEN}Installation complete! Ready for blockchain deployment.${NC}"
 echo ""

@@ -27,10 +27,13 @@ Run this single command to install everything:
 This installs:
 - Docker & Docker Compose
 - Go 1.25.4
-- Node.js 20.x
+- Node.js 20.x LTS (required for Evidence Upload Service)
+- TypeScript & ts-node
+- Nginx (HTTPS reverse proxy for IPFS)
 - Hyperledger Fabric v2.5.14 binaries
 - Fabric CA v1.5.15 binaries
-- All tools (jq, tree, curl, wget, git, etc.)
+- All Docker images (Fabric, CouchDB, IPFS Kubo, Nginx)
+- All tools (jq, tree, curl, wget, git, openssl, etc.)
 
 COMPREHENSIVE TESTING
 =====================
@@ -58,11 +61,13 @@ CORE VERSIONS
 Hyperledger Fabric:     2.5.14 (LTS)
 Fabric CA:              1.5.15
 Go:                     1.25.4
-Node.js:                20.x LTS (optional)
+Node.js:                20.x LTS (required for Evidence Upload Service)
+TypeScript:             5.3+
+Nginx:                  1.25+ (required for IPFS reverse proxy)
 Docker Engine:          24.0+ (25.x recommended)
 Docker Compose:         2.20+
 CouchDB:                3.3.x
-IPFS (Kubo):            0.29+ (optional)
+IPFS (Kubo):            0.24.0 (required for evidence storage)
 Python:                 3.11+
 
 SYSTEM REQUIREMENTS
@@ -89,6 +94,7 @@ python3
 python3-pip
 docker.io
 docker-compose
+nginx
 
 DOCKER IMAGES REQUIRED
 ======================
@@ -97,7 +103,8 @@ hyperledger/fabric-orderer:2.5.14
 hyperledger/fabric-ca:1.5.15
 hyperledger/fabric-tools:2.5.14
 couchdb:3.3
-ipfs/kubo:latest (optional)
+ipfs/kubo:v0.24.0
+nginx:1.25-alpine
 
 FABRIC BINARIES (installed in ./bin/)
 ======================================
@@ -255,10 +262,14 @@ FYPBcoc/
 │   │   ├── generate-crypto.sh
 │   │   ├── generate-channel-artifacts.sh
 │   │   ├── create-channel.sh
+│   │   ├── deploy-chaincode.sh
+│   │   ├── start-network.sh     # NEW: Start hot blockchain network
+│   │   ├── stop-network.sh      # NEW: Stop hot blockchain network
 │   │   └── test-ca-setup.sh
 │   ├── chaincode/               # Hot chain chaincode
 │   ├── configtx.yaml            # Hot chain configuration
-│   └── docker-compose-ca.yaml   # Hot chain CAs
+│   ├── docker-compose-ca.yaml   # Hot chain CAs
+│   └── docker-compose-network.yaml  # NEW: Hot network (orderer, peer, CouchDB)
 ├── cold-blockchain/              # COLD CHAIN (Archival)
 │   ├── ca-config/               # CA server configurations
 │   │   ├── ordererorg-ca/
@@ -273,10 +284,14 @@ FYPBcoc/
 │   │   ├── generate-crypto.sh
 │   │   ├── generate-channel-artifacts.sh
 │   │   ├── create-channel.sh
+│   │   ├── deploy-chaincode.sh
+│   │   ├── start-network.sh     # NEW: Start cold blockchain network
+│   │   ├── stop-network.sh      # NEW: Stop cold blockchain network
 │   │   └── test-ca-setup.sh
 │   ├── chaincode/               # Cold chain chaincode
 │   ├── configtx.yaml            # Cold chain configuration
-│   └── docker-compose-ca.yaml   # Cold chain CAs
+│   ├── docker-compose-ca.yaml   # Cold chain CAs
+│   └── docker-compose-network.yaml  # NEW: Cold network (orderer, 2 peers, 2 CouchDBs)
 ├── coc_chaincode/                # Chain of Custody Chaincode
 │   ├── access/                  # Casbin RBAC configuration
 │   │   ├── casbin_model.conf   # RBAC domain model
@@ -294,10 +309,28 @@ FYPBcoc/
 │   ├── go.mod                   # Go module definition
 │   ├── build.sh                 # Build and package script
 │   └── README.md                # Chaincode documentation
+├── ipfs-storage/                 # NEW: IPFS Infrastructure
+│   ├── evidence-upload-service/ # Evidence upload microservice
+│   │   ├── src/                 # TypeScript source code
+│   │   │   ├── index.ts         # Main REST API server
+│   │   │   ├── config.ts        # Configuration
+│   │   │   ├── utils/           # Hash & logger utilities
+│   │   │   └── services/        # IPFS & Fabric services
+│   │   ├── package.json         # Node.js dependencies
+│   │   ├── tsconfig.json        # TypeScript configuration
+│   │   ├── Dockerfile           # Container image
+│   │   └── .env.example         # Environment template
+│   ├── nginx/                   # Nginx reverse proxy
+│   │   ├── nginx.conf           # Nginx configuration
+│   │   └── generate-ssl.sh      # SSL certificate generator
+│   ├── docker-compose-ipfs.yaml # IPFS infrastructure
+│   ├── start-ipfs.sh            # Start IPFS services
+│   └── stop-ipfs.sh             # Stop IPFS services
 ├── install-prerequisites.sh      # Automated installer
 ├── test-all.sh                  # Comprehensive test suite
-├── requirements.md               # Detailed documentation
+├── requirements.md               # Detailed documentation (Sections 1-8)
 ├── requirements.txt              # THIS FILE
+├── INTEGRATION_JUMPSERVER.md     # NEW: JumpServer integration guide
 └── .gitignore                    # Git ignore rules
 
 CERTIFICATE AUTHORITIES
@@ -435,14 +468,93 @@ Fix:   Check DNS: ping 8.8.8.8
        Check internet: ping github.com
        Configure proxy if needed
 
+NETWORK DEPLOYMENT
+==================
+
+HOT BLOCKCHAIN NETWORK:
+- Orderer:     orderer.hot.coc.com (port 7050)
+- Peer:        peer0.laborg.hot.coc.com (port 7051)
+- CouchDB:     couchdb.peer0.laborg.hot.coc.com (port 5984)
+- Operations:  localhost:9443 (Prometheus metrics)
+- Features:    mTLS enabled, Fabric Gateway enabled
+
+COLD BLOCKCHAIN NETWORK:
+- Orderer:         orderer.cold.coc.com (port 7150)
+- Peer (LabOrg):   peer0.laborg.cold.coc.com (port 8051)
+- Peer (CourtOrg): peer0.courtorg.cold.coc.com (port 9051)
+- CouchDB (Lab):   couchdb.peer0.laborg.cold.coc.com (port 6984)
+- CouchDB (Court): couchdb.peer0.courtorg.cold.coc.com (port 7984)
+- Operations (Lab): localhost:9543
+- Operations (Court): localhost:9643
+- Features:    mTLS enabled, Dual-peer endorsement
+
+DEPLOYMENT COMMANDS:
+1. Start networks:
+   cd hot-blockchain && ./scripts/start-network.sh
+   cd cold-blockchain && ./scripts/start-network.sh
+
+2. Stop networks:
+   cd hot-blockchain && ./scripts/stop-network.sh
+   cd cold-blockchain && ./scripts/stop-network.sh
+
+3. Health checks:
+   curl http://localhost:9443/healthz  # Hot peer
+   curl http://localhost:9543/healthz  # Cold LabOrg peer
+   curl http://localhost:9643/healthz  # Cold CourtOrg peer
+
+IPFS INFRASTRUCTURE
+===================
+
+COMPONENTS:
+- IPFS Node:           ipfs.coc (ports 4001, 5001, 8080)
+- Nginx Proxy:         ipfs-proxy.coc (ports 5443 HTTPS, 8443)
+- Upload Service:      evidence-upload.coc (port 3000)
+
+IPFS COMMANDS:
+1. Start IPFS infrastructure:
+   cd ipfs-storage && ./start-ipfs.sh
+
+2. Stop IPFS infrastructure:
+   cd ipfs-storage && ./stop-ipfs.sh
+
+3. Build evidence upload service:
+   cd ipfs-storage/evidence-upload-service
+   npm install
+   npm run build
+
+EVIDENCE UPLOAD API:
+- Health:       GET  http://localhost:3000/health
+- Upload:       POST http://localhost:3000/api/evidence/upload
+- Get metadata: GET  http://localhost:3000/api/evidence/:id?chain=hot
+- Get file:     GET  http://localhost:3000/api/evidence/:id/file?chain=hot
+
+EXAMPLE UPLOAD:
+curl -X POST http://localhost:3000/api/evidence/upload \
+  -F 'file=@evidence.zip' \
+  -F 'investigationId=inv-001' \
+  -F 'description=Evidence file' \
+  -F 'userId=user:investigator1' \
+  -F 'userRole=BlockchainInvestigator' \
+  -F 'chain=hot'
+
 CLEANUP COMMANDS
 ================
 
-# Stop HOT chain CA containers
+# Stop HOT chain network
+cd ~/FYPBcoc/hot-blockchain
+./scripts/stop-network.sh  # Or: docker-compose -f docker-compose-network.yaml down
+
+# Stop COLD chain network
+cd ~/FYPBcoc/cold-blockchain
+./scripts/stop-network.sh  # Or: docker-compose -f docker-compose-network.yaml down
+
+# Stop IPFS infrastructure
+cd ~/FYPBcoc/ipfs-storage
+./stop-ipfs.sh  # Or: docker-compose -f docker-compose-ipfs.yaml down
+
+# Stop CA containers
 cd ~/FYPBcoc/hot-blockchain
 docker-compose -f docker-compose-ca.yaml down
-
-# Stop COLD chain CA containers
 cd ~/FYPBcoc/cold-blockchain
 docker-compose -f docker-compose-ca.yaml down
 
@@ -461,25 +573,37 @@ docker rmi $(docker images 'hyperledger/*' -q)
 
 SUPPORT & DOCUMENTATION
 =======================
-Project Repository:     https://github.com/rae81/FYPBcoc
-Development Branch:     claude/clone-fyp-repo-01GcQmZnMbvkNkxehnggLCs3
-Fabric Documentation:   https://hyperledger-fabric.readthedocs.io/en/release-2.5/
-Fabric CA Docs:         https://hyperledger-fabric-ca.readthedocs.io/
-Requirements Doc:       requirements.md
-Installation Script:    install-prerequisites.sh
+Project Repository:       https://github.com/rae81/FYPBcoc
+Development Branch:       claude/clone-fyp-repo-01GcQmZnMbvkNkxehnggLCs3
+Fabric Documentation:     https://hyperledger-fabric.readthedocs.io/en/release-2.5/
+Fabric CA Docs:           https://hyperledger-fabric-ca.readthedocs.io/
+IPFS Docs:                https://docs.ipfs.tech/
+
+PROJECT DOCUMENTATION:
+- requirements.md                 (Sections 1-8: Complete technical guide)
+- requirements.txt                (THIS FILE: Quick reference)
+- INTEGRATION_JUMPSERVER.md       (JumpServer integration guide)
+- install-prerequisites.sh        (Automated installation)
+- test-all.sh                     (Comprehensive testing)
 
 NOTES
 =====
 - Project split into hot-blockchain/ and cold-blockchain/ directories
 - Hot chain: Active investigation (*.hot.coc.com)
 - Cold chain: Archival with court validation (*.cold.coc.com)
+- IPFS integration: Evidence files stored on IPFS, metadata on blockchain
+- Evidence Upload Service: TypeScript microservice for JumpServer integration
 - All paths use absolute references: /home/user/FYPBcoc/
 - Private keys and certificates are gitignored for security
 - Only NodeOUs config.yaml templates are version controlled
 - Run 'source ~/.bashrc' after installation to update PATH
 - Log out/in required after adding user to docker group
-- Test hot chain: cd hot-blockchain && ./scripts/test-ca-setup.sh --skip-crypto
-- Test cold chain: cd cold-blockchain && ./scripts/test-ca-setup.sh --skip-crypto
+- Complete test suite: ./test-all.sh (13 phases, 200+ tests)
+- Automated installation: ./install-prerequisites.sh (installs everything)
 - For production, pin all Docker images to specific versions
 - Apply regular security updates to all system components
 - Dynamic certificate generation using Fabric CA v1.5.15
+- mTLS enabled on all Fabric components
+- Nginx reverse proxy for IPFS API (HTTPS)
+- Node.js 20.x LTS and TypeScript 5.3+ required for evidence upload service
+- See INTEGRATION_JUMPSERVER.md for JumpServer integration details
