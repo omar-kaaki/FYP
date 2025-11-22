@@ -227,9 +227,9 @@ sudo tar -C /usr/local -xzf go1.25.4.linux-amd64.tar.gz
 # Add to PATH
 echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
 echo 'export PATH=$PATH:$HOME/go/bin' >> ~/.bashrc
-source ~/.bashrc
+# Open a NEW terminal for PATH to take effect (DO NOT use 'source ~/.bashrc')
 
-# Verify installation
+# Verify installation (in new terminal)
 go version
 # Should output: go version go1.25.4 linux/amd64
 
@@ -242,7 +242,7 @@ rm go1.25.4.linux-amd64.tar.gz
 ```bash
 # Install via nvm (recommended)
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash
-source ~/.bashrc
+# Open a NEW terminal, then run:
 
 # Install Node.js 20.x LTS
 nvm install 20
@@ -268,12 +268,12 @@ curl -sSL https://raw.githubusercontent.com/hyperledger/fabric/main/scripts/inst
 # The binaries will be downloaded to ./bin directory
 # Add them to PATH permanently
 echo 'export PATH=$PATH:~/FYPBcoc/bin' >> ~/.bashrc
-source ~/.bashrc
+# Open a NEW terminal for PATH to take effect (DO NOT use 'source ~/.bashrc')
 
 # OR copy binaries to /usr/local/bin for system-wide access
 sudo cp bin/* /usr/local/bin/
 
-# Verify installations
+# Verify installations (in new terminal)
 fabric-ca-client version
 # Should output: fabric-ca-client: Version: 1.5.15...
 

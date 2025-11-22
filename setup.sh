@@ -200,10 +200,11 @@ main() {
         ./install-prerequisites.sh
         print_success "Prerequisites installed"
 
-        # Reload environment
-        print_info "Reloading shell environment..."
+        # Set up PATH for current shell
+        print_info "Setting up environment paths..."
         export PATH="$PATH:/usr/local/go/bin:$HOME/go/bin:${SCRIPT_DIR}/bin"
-        source ~/.bashrc 2>/dev/null || true
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh" 2>/dev/null || true
     else
         print_section "STEP 1: Skipping Prerequisites (--skip-prereq)"
     fi

@@ -143,13 +143,13 @@ INSTALLATION COMMANDS (Manual)
    sudo tar -C /usr/local -xzf go1.25.4.linux-amd64.tar.gz
    echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
    echo 'export PATH=$PATH:$HOME/go/bin' >> ~/.bashrc
-   source ~/.bashrc
+   # Open a NEW terminal for PATH to take effect (DO NOT use 'source ~/.bashrc')
    rm go1.25.4.linux-amd64.tar.gz
 
 5. Install Node.js 20.x (Optional)
    --------------------------------
    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash
-   source ~/.bashrc
+   # Open a NEW terminal, then run:
    nvm install 20
    nvm use 20
    nvm alias default 20
@@ -159,7 +159,7 @@ INSTALLATION COMMANDS (Manual)
    cd ~/FYPBcoc
    curl -sSL https://raw.githubusercontent.com/hyperledger/fabric/main/scripts/install-fabric.sh | bash -s -- binary 2.5.14 1.5.15
    echo 'export PATH=$PATH:~/FYPBcoc/bin' >> ~/.bashrc
-   source ~/.bashrc
+   # Open a NEW terminal for PATH to take effect (DO NOT use 'source ~/.bashrc')
    # Optional: sudo cp bin/* /usr/local/bin/
 
 7. Pull Docker Images
@@ -461,7 +461,7 @@ Fix:   docker-compose -f docker-compose-ca.yaml down
 
 Issue: go: command not found
 Fix:   export PATH=$PATH:/usr/local/go/bin
-       source ~/.bashrc
+       Or open a NEW terminal (recommended)
 
 Issue: Network connection issues
 Fix:   Check DNS: ping 8.8.8.8
@@ -596,7 +596,7 @@ NOTES
 - All paths use absolute references: /home/user/FYPBcoc/
 - Private keys and certificates are gitignored for security
 - Only NodeOUs config.yaml templates are version controlled
-- Run 'source ~/.bashrc' after installation to update PATH
+- Open a NEW terminal after installation to update PATH (DO NOT use 'source ~/.bashrc')
 - Log out/in required after adding user to docker group
 - Complete test suite: ./test-all.sh (13 phases, 200+ tests)
 - Automated installation: ./install-prerequisites.sh (installs everything)
