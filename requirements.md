@@ -152,46 +152,296 @@ Choose **one** client SDK for backend integration:
 
 ---
 
-## Installation Quick Reference
+## Complete Installation Guide
 
-### 1. Install Docker
+### Prerequisites Check
+
+Before starting, ensure you have:
+- 64-bit Linux system (Kali Linux recommended)
+- At least 4GB RAM (8GB+ recommended)
+- 20GB free disk space
+- Internet connection
+- sudo/root access
+
+### Step-by-Step Installation (Kali Linux / Debian-based)
+
+#### 1. Update System and Install Core Tools
+
 ```bash
-# Follow official Docker installation for your distro
-curl -fsSL https://get.docker.com -o get-docker.sh
-sudo sh get-docker.sh
-sudo usermod -aG docker $USER
+# Update package index
+sudo apt update && sudo apt upgrade -y
+
+# Install essential tools
+sudo apt install -y \
+    git \
+    curl \
+    wget \
+    tar \
+    unzip \
+    jq \
+    openssl \
+    build-essential \
+    tree \
+    htop \
+    python3 \
+    python3-pip
 ```
 
-### 2. Install Go
+#### 2. Install Docker and Docker Compose
+
 ```bash
-# Download and install Go 1.25.4 (latest stable)
-# Check https://go.dev/dl/ for the latest version
+# Install Docker
+sudo apt install -y docker.io
+
+# Start and enable Docker service
+sudo systemctl start docker
+sudo systemctl enable docker
+
+# Install Docker Compose
+sudo apt install -y docker-compose
+
+# Add current user to docker group (IMPORTANT)
+sudo usermod -aG docker $USER
+
+# Verify Docker installation
+docker --version
+docker-compose --version
+
+# IMPORTANT: Log out and log back in for group changes to take effect
+# Or run: newgrp docker
+```
+
+#### 3. Install Go 1.25.4
+
+```bash
+# Download Go 1.25.4 (latest stable as of November 5, 2025)
+cd ~
 wget https://go.dev/dl/go1.25.4.linux-amd64.tar.gz
+
+# Remove old Go installation (if exists)
 sudo rm -rf /usr/local/go
+
+# Extract and install
 sudo tar -C /usr/local -xzf go1.25.4.linux-amd64.tar.gz
+
+# Add to PATH
 echo 'export PATH=$PATH:/usr/local/go/bin' >> ~/.bashrc
 echo 'export PATH=$PATH:$HOME/go/bin' >> ~/.bashrc
 source ~/.bashrc
+
+# Verify installation
+go version
+# Should output: go version go1.25.4 linux/amd64
+
+# Clean up
+rm go1.25.4.linux-amd64.tar.gz
 ```
 
-### 3. Install Node.js (via nvm)
+#### 4. Install Node.js 20.x LTS (Optional - for Gateway SDK)
+
 ```bash
+# Install via nvm (recommended)
 curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.0/install.sh | bash
 source ~/.bashrc
+
+# Install Node.js 20.x LTS
 nvm install 20
 nvm use 20
+nvm alias default 20
+
+# Verify installation
+node --version
+npm --version
 ```
 
-### 4. Install Fabric Binaries and Docker Images
+#### 5. Install Hyperledger Fabric Binaries v2.5.14
+
 ```bash
-curl -sSL https://raw.githubusercontent.com/hyperledger/fabric/main/scripts/install-fabric.sh | bash -s -- 2.5.14 1.5.15 docker binary
-export PATH=$PATH:$(pwd)/fabric-samples/bin
+# Navigate to your project directory
+cd ~/FYPBcoc
+
+# Download Fabric binaries and Docker images
+# This downloads: peer, orderer, configtxgen, configtxlator, osnadmin,
+# fabric-ca-server, fabric-ca-client
+curl -sSL https://raw.githubusercontent.com/hyperledger/fabric/main/scripts/install-fabric.sh | bash -s -- binary 2.5.14 1.5.15
+
+# The binaries will be downloaded to ./bin directory
+# Add them to PATH permanently
+echo 'export PATH=$PATH:~/FYPBcoc/bin' >> ~/.bashrc
+source ~/.bashrc
+
+# OR copy binaries to /usr/local/bin for system-wide access
+sudo cp bin/* /usr/local/bin/
+
+# Verify installations
+fabric-ca-client version
+# Should output: fabric-ca-client: Version: 1.5.15...
+
+configtxgen --version
+# Should output: configtxgen: Version: 2.5.14...
+
+peer version
+# Should output: peer: Version: 2.5.14...
 ```
 
-### 5. Pull Additional Docker Images
+#### 6. Pull Hyperledger Fabric Docker Images
+
 ```bash
+# Pull Fabric Docker images (peer, orderer, tools)
+docker pull hyperledger/fabric-peer:2.5.14
+docker pull hyperledger/fabric-orderer:2.5.14
+docker pull hyperledger/fabric-ca:1.5.15
+docker pull hyperledger/fabric-tools:2.5.14
+
+# Tag as 'latest' for convenience (optional)
+docker tag hyperledger/fabric-peer:2.5.14 hyperledger/fabric-peer:latest
+docker tag hyperledger/fabric-orderer:2.5.14 hyperledger/fabric-orderer:latest
+docker tag hyperledger/fabric-ca:1.5.15 hyperledger/fabric-ca:latest
+docker tag hyperledger/fabric-tools:2.5.14 hyperledger/fabric-tools:latest
+
+# Verify images
+docker images | grep hyperledger
+```
+
+#### 7. Pull Additional Docker Images
+
+```bash
+# Pull CouchDB for state database
 docker pull couchdb:3.3
+
+# Pull IPFS for distributed storage (optional for now)
 docker pull ipfs/kubo:latest
+
+# Verify all images
+docker images
+```
+
+#### 8. Clone and Setup FYP Repository
+
+```bash
+# Clone the repository
+cd ~
+git clone https://github.com/rae81/FYPBcoc.git
+cd FYPBcoc
+
+# Checkout the development branch
+git checkout claude/clone-fyp-repo-01GcQmZnMbvkNkxehnggLCs3
+
+# Pull latest changes
+git pull origin claude/clone-fyp-repo-01GcQmZnMbvkNkxehnggLCs3
+
+# Verify directory structure
+ls -la
+```
+
+### Post-Installation Verification
+
+Run these commands to verify all tools are properly installed:
+
+```bash
+# Check Docker
+docker --version
+docker-compose --version
+docker ps
+
+# Check Go
+go version
+
+# Check Node.js (if installed)
+node --version
+npm --version
+
+# Check Fabric tools
+fabric-ca-client version
+configtxgen --version
+peer version
+
+# Check Docker images
+docker images | grep hyperledger
+
+# Check project files
+cd ~/FYPBcoc
+ls -la scripts/
+ls -la ca-config/
+```
+
+Expected output:
+- Docker version ≥ 24.0
+- Docker Compose version ≥ 2.20
+- Go version 1.25.4
+- fabric-ca-client version 1.5.15
+- configtxgen version 2.5.14
+- peer version 2.5.14
+
+---
+
+## Testing the CA Infrastructure
+
+After installation, test the Certificate Authority setup:
+
+### Option 1: Quick Validation (No Crypto Generation)
+
+```bash
+cd ~/FYPBcoc
+
+# Run test script without generating crypto material
+./scripts/test-ca-setup.sh --skip-crypto
+```
+
+This will verify:
+- All required tools are installed
+- Configuration files exist and are valid
+- Docker Compose syntax is correct
+- Docker network setup
+
+### Option 2: Full Test (Generate Crypto Material)
+
+```bash
+cd ~/FYPBcoc
+
+# Run full test including crypto generation
+# This will start CA containers and generate all certificates
+./scripts/test-ca-setup.sh
+```
+
+This will:
+1. Start all 6 CA containers
+2. Verify CA API health
+3. Generate crypto material for all identities
+4. Validate certificate structure
+5. Test configtx.yaml
+
+### Manual Crypto Generation
+
+If you want to generate crypto material manually:
+
+```bash
+cd ~/FYPBcoc
+
+# Start CA containers
+docker-compose -f docker-compose-ca.yaml up -d
+
+# Wait for CAs to be ready (10-15 seconds)
+sleep 15
+
+# Generate all crypto material
+./scripts/generate-crypto.sh
+
+# Verify crypto-config directory
+tree -L 4 crypto-config/
+```
+
+### Cleanup
+
+To stop CA containers and clean up:
+
+```bash
+# Stop CA containers
+docker-compose -f docker-compose-ca.yaml down
+
+# Remove generated crypto material (optional)
+rm -rf crypto-config/*
+rm -rf .fabric-ca-client/
 ```
 
 ---
@@ -207,7 +457,8 @@ docker pull ipfs/kubo:latest
 
 ---
 
-**Last Updated:** 2025-11-21
+**Last Updated:** 2025-11-22
 **Fabric Version:** 2.5.14 LTS (latest stable)
 **Fabric CA Version:** 1.5.15
 **Go Version:** ≥ 1.22.x (latest stable: 1.25.4, released November 5, 2025)
+**Branch:** claude/clone-fyp-repo-01GcQmZnMbvkNkxehnggLCs3
