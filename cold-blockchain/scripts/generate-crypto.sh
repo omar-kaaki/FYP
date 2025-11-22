@@ -120,12 +120,32 @@ mkdir -p "${CRYPTO_DIR}/peerOrganizations/courtorg.cold.coc.com/ca"
 mkdir -p "${CRYPTO_DIR}/peerOrganizations/courtorg.cold.coc.com/tlsca"
 
 # Get CA root certs from containers
+echo "Copying CA certificates from containers..."
+
 docker cp ca.ordererorg.cold.coc.com:/etc/hyperledger/fabric-ca-server/ca-cert.pem "${CRYPTO_DIR}/ordererOrganizations/ordererorg.cold.coc.com/ca/ca-cert.pem"
 docker cp tlsca.ordererorg.cold.coc.com:/etc/hyperledger/fabric-ca-server/ca-cert.pem "${CRYPTO_DIR}/ordererOrganizations/ordererorg.cold.coc.com/tlsca/tls-cert.pem"
 docker cp ca.laborg.cold.coc.com:/etc/hyperledger/fabric-ca-server/ca-cert.pem "${CRYPTO_DIR}/peerOrganizations/laborg.cold.coc.com/ca/ca-cert.pem"
 docker cp tlsca.laborg.cold.coc.com:/etc/hyperledger/fabric-ca-server/ca-cert.pem "${CRYPTO_DIR}/peerOrganizations/laborg.cold.coc.com/tlsca/tls-cert.pem"
 docker cp ca.courtorg.cold.coc.com:/etc/hyperledger/fabric-ca-server/ca-cert.pem "${CRYPTO_DIR}/peerOrganizations/courtorg.cold.coc.com/ca/ca-cert.pem"
 docker cp tlsca.courtorg.cold.coc.com:/etc/hyperledger/fabric-ca-server/ca-cert.pem "${CRYPTO_DIR}/peerOrganizations/courtorg.cold.coc.com/tlsca/tls-cert.pem"
+
+# Fix ownership of copied files (docker cp creates files as root)
+if [ -n "$SUDO_USER" ]; then
+    chown -R $SUDO_USER:$SUDO_USER "${CRYPTO_DIR}" 2>/dev/null || true
+fi
+
+# Verify certificates were copied correctly
+for cert in "${CRYPTO_DIR}/ordererOrganizations/ordererorg.cold.coc.com/ca/ca-cert.pem" \
+            "${CRYPTO_DIR}/ordererOrganizations/ordererorg.cold.coc.com/tlsca/tls-cert.pem" \
+            "${CRYPTO_DIR}/peerOrganizations/laborg.cold.coc.com/ca/ca-cert.pem" \
+            "${CRYPTO_DIR}/peerOrganizations/laborg.cold.coc.com/tlsca/tls-cert.pem" \
+            "${CRYPTO_DIR}/peerOrganizations/courtorg.cold.coc.com/ca/ca-cert.pem" \
+            "${CRYPTO_DIR}/peerOrganizations/courtorg.cold.coc.com/tlsca/tls-cert.pem"; do
+    if [ ! -s "$cert" ]; then
+        print_error "Certificate file is empty: $cert"
+        exit 1
+    fi
+done
 
 print_success "CA root certificates obtained"
 

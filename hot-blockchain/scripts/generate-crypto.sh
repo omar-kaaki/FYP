@@ -112,18 +112,29 @@ mkdir -p "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/tlsca"
 mkdir -p "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/ca"
 mkdir -p "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/tlsca"
 
-# Get CA root certs
-curl -sSf -k ${ORDERER_CA_URL}/cainfo | jq -r '.result.CAChain' | base64 -d > "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/ca/ca-cert.pem" 2>/dev/null || \
-  docker cp ca.ordererorg.hot.coc.com:/etc/hyperledger/fabric-ca-server/ca-cert.pem "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/ca/ca-cert.pem"
+# Get CA root certs - use docker cp directly (more reliable)
+echo "Copying CA certificates from containers..."
 
-curl -sSf -k ${ORDERER_TLSCA_URL}/cainfo | jq -r '.result.CAChain' | base64 -d > "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/tlsca/tls-cert.pem" 2>/dev/null || \
-  docker cp tlsca.ordererorg.hot.coc.com:/etc/hyperledger/fabric-ca-server/ca-cert.pem "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/tlsca/tls-cert.pem"
+docker cp ca.ordererorg.hot.coc.com:/etc/hyperledger/fabric-ca-server/ca-cert.pem "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/ca/ca-cert.pem"
+docker cp tlsca.ordererorg.hot.coc.com:/etc/hyperledger/fabric-ca-server/ca-cert.pem "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/tlsca/tls-cert.pem"
+docker cp ca.laborg.hot.coc.com:/etc/hyperledger/fabric-ca-server/ca-cert.pem "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/ca/ca-cert.pem"
+docker cp tlsca.laborg.hot.coc.com:/etc/hyperledger/fabric-ca-server/ca-cert.pem "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/tlsca/tls-cert.pem"
 
-curl -sSf -k ${LABORG_CA_URL}/cainfo | jq -r '.result.CAChain' | base64 -d > "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/ca/ca-cert.pem" 2>/dev/null || \
-  docker cp ca.laborg.hot.coc.com:/etc/hyperledger/fabric-ca-server/ca-cert.pem "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/ca/ca-cert.pem"
+# Fix ownership of copied files (docker cp creates files as root)
+if [ -n "$SUDO_USER" ]; then
+    chown -R $SUDO_USER:$SUDO_USER "${CRYPTO_DIR}" 2>/dev/null || true
+fi
 
-curl -sSf -k ${LABORG_TLSCA_URL}/cainfo | jq -r '.result.CAChain' | base64 -d > "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/tlsca/tls-cert.pem" 2>/dev/null || \
-  docker cp tlsca.laborg.hot.coc.com:/etc/hyperledger/fabric-ca-server/ca-cert.pem "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/tlsca/tls-cert.pem"
+# Verify certificates were copied correctly
+for cert in "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/ca/ca-cert.pem" \
+            "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/tlsca/tls-cert.pem" \
+            "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/ca/ca-cert.pem" \
+            "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/tlsca/tls-cert.pem"; do
+    if [ ! -s "$cert" ]; then
+        print_error "Certificate file is empty: $cert"
+        exit 1
+    fi
+done
 
 print_success "CA root certificates obtained"
 
