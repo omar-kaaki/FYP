@@ -4,10 +4,52 @@ FYP Blockchain - System Requirements
 Last Updated: 2025-11-22
 Branch: claude/clone-fyp-repo-01GcQmZnMbvkNkxehnggLCs3
 
+╔════════════════════════════════════════════════════════════════╗
+║              MASTER INSTALLATION AND TESTING SCRIPTS           ║
+╚════════════════════════════════════════════════════════════════╝
+
+QUICK START
+===========
+
+1. INSTALL ALL PREREQUISITES (One Command):
+    ./install-prerequisites.sh
+
+2. TEST EVERYTHING (One Command):
+    ./test-all.sh --skip-crypto
+
+See README_TESTING.md for complete guide.
+
 AUTOMATED INSTALLATION
 ======================
 Run this single command to install everything:
     ./install-prerequisites.sh
+
+This installs:
+- Docker & Docker Compose
+- Go 1.25.4
+- Node.js 20.x
+- Hyperledger Fabric v2.5.14 binaries
+- Fabric CA v1.5.15 binaries
+- All tools (jq, tree, curl, wget, git, etc.)
+
+COMPREHENSIVE TESTING
+=====================
+Test both hot and cold blockchains:
+
+    # Quick test (recommended first)
+    ./test-all.sh --skip-crypto
+
+    # Full test with crypto generation
+    ./test-all.sh
+
+This validates:
+- All prerequisites and tools
+- Hot blockchain (4 CAs, 2 orgs)
+- Cold blockchain (6 CAs, 3 orgs)
+- MSP structures and NodeOUs
+- TLS configurations
+- Domain names (*.hot.coc.com / *.cold.coc.com)
+
 
 Or manually install using the sections below.
 
