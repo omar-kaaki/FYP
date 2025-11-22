@@ -3,10 +3,9 @@
 # generate-channel-artifacts.sh - Generate channel artifacts for COLD Blockchain
 # Hyperledger Fabric v2.5.14 - Archival Chain
 #
-# This script generates:
-# 1. Genesis block for orderer bootstrapping
-# 2. Channel creation transaction for cold-chain
-# 3. Anchor peer update transactions for LabOrg and CourtOrg
+# This script generates the channel genesis block using Fabric 2.x approach.
+# In Fabric 2.x, channels are created using osnadmin with the genesis block,
+# and anchor peer updates are done via configtxlator after channel creation.
 #
 
 set -e
@@ -25,11 +24,12 @@ ARTIFACTS_DIR="${BASE_DIR}/channel-artifacts"
 
 # Channel configuration
 CHANNEL_NAME="cold-chain"
-ORDERER_GENESIS_PROFILE="ColdChainGenesis"
+CHANNEL_PROFILE="ColdChainGenesis"
 
 echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}  COLD Blockchain Channel Artifacts${NC}"
 echo -e "${BLUE}  Archival Chain${NC}"
+echo -e "${BLUE}  Fabric 2.x Channel Participation API${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 
@@ -63,72 +63,24 @@ fi
 print_success "Found configtx.yaml"
 
 # ============================================================================
-# STEP 1: Generate Genesis Block for Orderer
+# STEP 1: Generate Channel Genesis Block
+# ============================================================================
+# In Fabric 2.x, we generate the channel genesis block directly.
+# This block is used by osnadmin to join the orderer to the channel,
+# and by peer channel join to join peers to the channel.
 # ============================================================================
 
-print_section "STEP 1: Generating genesis block for orderer"
+print_section "STEP 1: Generating channel genesis block"
 
-configtxgen -profile ${ORDERER_GENESIS_PROFILE} \
-    -outputBlock "${ARTIFACTS_DIR}/genesis.block" \
-    -channelID system-channel
-
-if [[ $? -eq 0 ]] && [[ -f "${ARTIFACTS_DIR}/genesis.block" ]]; then
-    print_success "Genesis block generated: genesis.block"
-    ls -lh "${ARTIFACTS_DIR}/genesis.block"
-else
-    print_error "Failed to generate genesis block"
-    exit 1
-fi
-
-# ============================================================================
-# STEP 2: Generate Channel Creation Transaction
-# ============================================================================
-
-print_section "STEP 2: Generating channel creation transaction"
-
-configtxgen -profile ${ORDERER_GENESIS_PROFILE} \
-    -outputCreateChannelTx "${ARTIFACTS_DIR}/${CHANNEL_NAME}.tx" \
+configtxgen -profile ${CHANNEL_PROFILE} \
+    -outputBlock "${ARTIFACTS_DIR}/${CHANNEL_NAME}.block" \
     -channelID ${CHANNEL_NAME}
 
-if [[ $? -eq 0 ]] && [[ -f "${ARTIFACTS_DIR}/${CHANNEL_NAME}.tx" ]]; then
-    print_success "Channel creation tx generated: ${CHANNEL_NAME}.tx"
-    ls -lh "${ARTIFACTS_DIR}/${CHANNEL_NAME}.tx"
+if [[ $? -eq 0 ]] && [[ -f "${ARTIFACTS_DIR}/${CHANNEL_NAME}.block" ]]; then
+    print_success "Channel genesis block generated: ${CHANNEL_NAME}.block"
+    ls -lh "${ARTIFACTS_DIR}/${CHANNEL_NAME}.block"
 else
-    print_error "Failed to generate channel creation transaction"
-    exit 1
-fi
-
-# ============================================================================
-# STEP 3: Generate Anchor Peer Update Transactions
-# ============================================================================
-
-print_section "STEP 3: Generating anchor peer update transactions"
-
-# LabOrg anchor peer update
-configtxgen -profile ${ORDERER_GENESIS_PROFILE} \
-    -outputAnchorPeersUpdate "${ARTIFACTS_DIR}/LabOrgAnchors.tx" \
-    -channelID ${CHANNEL_NAME} \
-    -asOrg LabOrg
-
-if [[ $? -eq 0 ]] && [[ -f "${ARTIFACTS_DIR}/LabOrgAnchors.tx" ]]; then
-    print_success "LabOrg anchor peer update tx generated"
-    ls -lh "${ARTIFACTS_DIR}/LabOrgAnchors.tx"
-else
-    print_error "Failed to generate LabOrg anchor peer update"
-    exit 1
-fi
-
-# CourtOrg anchor peer update
-configtxgen -profile ${ORDERER_GENESIS_PROFILE} \
-    -outputAnchorPeersUpdate "${ARTIFACTS_DIR}/CourtOrgAnchors.tx" \
-    -channelID ${CHANNEL_NAME} \
-    -asOrg CourtOrg
-
-if [[ $? -eq 0 ]] && [[ -f "${ARTIFACTS_DIR}/CourtOrgAnchors.tx" ]]; then
-    print_success "CourtOrg anchor peer update tx generated"
-    ls -lh "${ARTIFACTS_DIR}/CourtOrgAnchors.tx"
-else
-    print_error "Failed to generate CourtOrg anchor peer update"
+    print_error "Failed to generate channel genesis block"
     exit 1
 fi
 
@@ -142,17 +94,14 @@ echo -e "${GREEN}  Channel Artifacts Generated!${NC}"
 echo -e "${GREEN}========================================${NC}"
 echo ""
 echo -e "${BLUE}Generated artifacts:${NC}"
-echo "  1. genesis.block - Orderer bootstrap block"
-echo "  2. ${CHANNEL_NAME}.tx - Channel creation transaction"
-echo "  3. LabOrgAnchors.tx - LabOrg anchor peer update"
-echo "  4. CourtOrgAnchors.tx - CourtOrg anchor peer update"
+echo "  1. ${CHANNEL_NAME}.block - Channel genesis block"
 echo ""
 echo -e "${BLUE}Artifacts location:${NC}"
 echo "  ${ARTIFACTS_DIR}/"
 echo ""
-echo -e "${YELLOW}Next steps:${NC}"
-echo "  1. Start orderer with genesis block"
-echo "  2. Create channel: peer channel create ..."
-echo "  3. Join peers to channel: peer channel join ..."
-echo "  4. Update anchor peers: peer channel update ..."
+echo -e "${YELLOW}Next steps (Fabric 2.x approach):${NC}"
+echo "  1. Start orderer"
+echo "  2. Join orderer to channel: osnadmin channel join --channelID ${CHANNEL_NAME} --config-block ${ARTIFACTS_DIR}/${CHANNEL_NAME}.block ..."
+echo "  3. Join peers to channel: peer channel join -b ${ARTIFACTS_DIR}/${CHANNEL_NAME}.block"
+echo "  4. Update anchor peers via configtxlator (after channel creation)"
 echo ""

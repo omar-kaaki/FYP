@@ -3,11 +3,10 @@
 # create-channel.sh - Create and join COLD blockchain channel
 # Hyperledger Fabric v2.5.14 - Archival Chain
 #
-# This script:
-# 1. Creates the cold-chain channel
+# This script uses Fabric 2.x Channel Participation API:
+# 1. Joins the orderer to the channel using osnadmin
 # 2. Joins LabOrg peer to the channel
 # 3. Joins CourtOrg peer to the channel
-# 4. Updates anchor peers for LabOrg and CourtOrg
 #
 
 set -e
@@ -28,11 +27,14 @@ CRYPTO_DIR="${BASE_DIR}/crypto-config"
 # Channel configuration
 CHANNEL_NAME="cold-chain"
 ORDERER_ADDRESS="localhost:7150"
+ORDERER_ADMIN_ADDRESS="localhost:7153"
 ORDERER_TLS_CA="${CRYPTO_DIR}/ordererOrganizations/ordererorg.cold.coc.com/tlsca/tlsca.ordererorg.cold.coc.com-cert.pem"
+ORDERER_ADMIN_TLS_CERT="${CRYPTO_DIR}/ordererOrganizations/ordererorg.cold.coc.com/orderers/orderer.cold.coc.com/tls/server.crt"
+ORDERER_ADMIN_TLS_KEY="${CRYPTO_DIR}/ordererOrganizations/ordererorg.cold.coc.com/orderers/orderer.cold.coc.com/tls/server.key"
 
 echo -e "${BLUE}========================================${NC}"
 echo -e "${BLUE}  COLD Blockchain Channel Creation${NC}"
-echo -e "${BLUE}  Archival Chain${NC}"
+echo -e "${BLUE}  Fabric 2.x Channel Participation API${NC}"
 echo -e "${BLUE}========================================${NC}"
 echo ""
 
@@ -75,24 +77,12 @@ set_courtorg_env() {
 # Verify artifacts exist
 print_section "Verifying channel artifacts"
 
-if [[ ! -f "${ARTIFACTS_DIR}/${CHANNEL_NAME}.tx" ]]; then
-    print_error "Channel creation transaction not found: ${CHANNEL_NAME}.tx"
+if [[ ! -f "${ARTIFACTS_DIR}/${CHANNEL_NAME}.block" ]]; then
+    print_error "Channel genesis block not found: ${CHANNEL_NAME}.block"
     print_info "Run ./generate-channel-artifacts.sh first"
     exit 1
 fi
-print_success "Found ${CHANNEL_NAME}.tx"
-
-if [[ ! -f "${ARTIFACTS_DIR}/LabOrgAnchors.tx" ]]; then
-    print_error "LabOrg anchor peer update not found"
-    exit 1
-fi
-print_success "Found LabOrgAnchors.tx"
-
-if [[ ! -f "${ARTIFACTS_DIR}/CourtOrgAnchors.tx" ]]; then
-    print_error "CourtOrg anchor peer update not found"
-    exit 1
-fi
-print_success "Found CourtOrgAnchors.tx"
+print_success "Found ${CHANNEL_NAME}.block"
 
 # Verify orderer TLS CA exists
 if [[ ! -f "${ORDERER_TLS_CA}" ]]; then
@@ -103,32 +93,44 @@ fi
 print_success "Found orderer TLS CA certificate"
 
 # ============================================================================
-# STEP 1: Create Channel (as LabOrg Admin)
+# STEP 1: Join Orderer to Channel using osnadmin
 # ============================================================================
 
-print_section "STEP 1: Creating channel '${CHANNEL_NAME}' (as LabOrg)"
+print_section "STEP 1: Joining orderer to channel '${CHANNEL_NAME}'"
 
-set_laborg_env
+# Check if channel already exists on orderer
+EXISTING_CHANNELS=$(osnadmin channel list \
+    -o ${ORDERER_ADMIN_ADDRESS} \
+    --ca-file "${ORDERER_TLS_CA}" \
+    --client-cert "${ORDERER_ADMIN_TLS_CERT}" \
+    --client-key "${ORDERER_ADMIN_TLS_KEY}" 2>/dev/null | grep "${CHANNEL_NAME}" || true)
 
-print_success "LabOrg admin environment configured"
-print_info "MSP ID: ${CORE_PEER_LOCALMSPID}"
-print_info "Peer address: ${CORE_PEER_ADDRESS}"
-
-peer channel create \
-    -o ${ORDERER_ADDRESS} \
-    -c ${CHANNEL_NAME} \
-    -f "${ARTIFACTS_DIR}/${CHANNEL_NAME}.tx" \
-    --outputBlock "${ARTIFACTS_DIR}/${CHANNEL_NAME}.block" \
-    --tls \
-    --cafile "${ORDERER_TLS_CA}"
-
-if [[ $? -eq 0 ]] && [[ -f "${ARTIFACTS_DIR}/${CHANNEL_NAME}.block" ]]; then
-    print_success "Channel '${CHANNEL_NAME}' created successfully"
-    ls -lh "${ARTIFACTS_DIR}/${CHANNEL_NAME}.block"
+if [[ -n "${EXISTING_CHANNELS}" ]]; then
+    print_info "Channel '${CHANNEL_NAME}' already exists on orderer"
 else
-    print_error "Failed to create channel"
-    exit 1
+    osnadmin channel join \
+        --channelID ${CHANNEL_NAME} \
+        --config-block "${ARTIFACTS_DIR}/${CHANNEL_NAME}.block" \
+        -o ${ORDERER_ADMIN_ADDRESS} \
+        --ca-file "${ORDERER_TLS_CA}" \
+        --client-cert "${ORDERER_ADMIN_TLS_CERT}" \
+        --client-key "${ORDERER_ADMIN_TLS_KEY}"
+
+    if [[ $? -eq 0 ]]; then
+        print_success "Orderer joined channel '${CHANNEL_NAME}'"
+    else
+        print_error "Failed to join orderer to channel"
+        exit 1
+    fi
 fi
+
+# Verify channel on orderer
+print_info "Verifying channel on orderer..."
+osnadmin channel list \
+    -o ${ORDERER_ADMIN_ADDRESS} \
+    --ca-file "${ORDERER_TLS_CA}" \
+    --client-cert "${ORDERER_ADMIN_TLS_CERT}" \
+    --client-key "${ORDERER_ADMIN_TLS_KEY}"
 
 # ============================================================================
 # STEP 2: Join LabOrg Peer to Channel
@@ -138,14 +140,25 @@ print_section "STEP 2: Joining LabOrg peer0 to channel"
 
 set_laborg_env
 
-peer channel join \
-    -b "${ARTIFACTS_DIR}/${CHANNEL_NAME}.block"
+print_success "LabOrg admin environment configured"
+print_info "MSP ID: ${CORE_PEER_LOCALMSPID}"
+print_info "Peer address: ${CORE_PEER_ADDRESS}"
 
-if [[ $? -eq 0 ]]; then
-    print_success "peer0.laborg.cold.coc.com joined channel '${CHANNEL_NAME}'"
+# Check if peer already joined
+JOINED_CHANNELS=$(peer channel list 2>/dev/null | grep "${CHANNEL_NAME}" || true)
+
+if [[ -n "${JOINED_CHANNELS}" ]]; then
+    print_info "peer0.laborg.cold.coc.com already member of '${CHANNEL_NAME}'"
 else
-    print_error "Failed to join LabOrg peer to channel"
-    exit 1
+    peer channel join \
+        -b "${ARTIFACTS_DIR}/${CHANNEL_NAME}.block"
+
+    if [[ $? -eq 0 ]]; then
+        print_success "peer0.laborg.cold.coc.com joined channel '${CHANNEL_NAME}'"
+    else
+        print_error "Failed to join LabOrg peer to channel"
+        exit 1
+    fi
 fi
 
 # Verify LabOrg peer joined
@@ -170,14 +183,21 @@ print_success "CourtOrg admin environment configured"
 print_info "MSP ID: ${CORE_PEER_LOCALMSPID}"
 print_info "Peer address: ${CORE_PEER_ADDRESS}"
 
-peer channel join \
-    -b "${ARTIFACTS_DIR}/${CHANNEL_NAME}.block"
+# Check if peer already joined
+JOINED_CHANNELS=$(peer channel list 2>/dev/null | grep "${CHANNEL_NAME}" || true)
 
-if [[ $? -eq 0 ]]; then
-    print_success "peer0.courtorg.cold.coc.com joined channel '${CHANNEL_NAME}'"
+if [[ -n "${JOINED_CHANNELS}" ]]; then
+    print_info "peer0.courtorg.cold.coc.com already member of '${CHANNEL_NAME}'"
 else
-    print_error "Failed to join CourtOrg peer to channel"
-    exit 1
+    peer channel join \
+        -b "${ARTIFACTS_DIR}/${CHANNEL_NAME}.block"
+
+    if [[ $? -eq 0 ]]; then
+        print_success "peer0.courtorg.cold.coc.com joined channel '${CHANNEL_NAME}'"
+    else
+        print_error "Failed to join CourtOrg peer to channel"
+        exit 1
+    fi
 fi
 
 # Verify CourtOrg peer joined
@@ -187,50 +207,6 @@ if [[ -n "${CHANNELS}" ]]; then
     print_success "Verified CourtOrg peer is member of channel"
 else
     print_error "CourtOrg peer not showing as channel member"
-    exit 1
-fi
-
-# ============================================================================
-# STEP 4: Update Anchor Peers for LabOrg
-# ============================================================================
-
-print_section "STEP 4: Updating anchor peers for LabOrg"
-
-set_laborg_env
-
-peer channel update \
-    -o ${ORDERER_ADDRESS} \
-    -c ${CHANNEL_NAME} \
-    -f "${ARTIFACTS_DIR}/LabOrgAnchors.tx" \
-    --tls \
-    --cafile "${ORDERER_TLS_CA}"
-
-if [[ $? -eq 0 ]]; then
-    print_success "Anchor peer updated for LabOrg"
-else
-    print_error "Failed to update LabOrg anchor peer"
-    exit 1
-fi
-
-# ============================================================================
-# STEP 5: Update Anchor Peers for CourtOrg
-# ============================================================================
-
-print_section "STEP 5: Updating anchor peers for CourtOrg"
-
-set_courtorg_env
-
-peer channel update \
-    -o ${ORDERER_ADDRESS} \
-    -c ${CHANNEL_NAME} \
-    -f "${ARTIFACTS_DIR}/CourtOrgAnchors.tx" \
-    --tls \
-    --cafile "${ORDERER_TLS_CA}"
-
-if [[ $? -eq 0 ]]; then
-    print_success "Anchor peer updated for CourtOrg"
-else
-    print_error "Failed to update CourtOrg anchor peer"
     exit 1
 fi
 
@@ -249,9 +225,6 @@ echo "  Organizations: LabOrg, CourtOrg"
 echo "  Peers joined:"
 echo "    - peer0.laborg.cold.coc.com"
 echo "    - peer0.courtorg.cold.coc.com"
-echo "  Anchor peers:"
-echo "    - peer0.laborg.cold.coc.com (LabOrg)"
-echo "    - peer0.courtorg.cold.coc.com (CourtOrg)"
 echo ""
 echo -e "${YELLOW}Verification commands:${NC}"
 echo "  # List channels (as LabOrg)"

@@ -49,7 +49,7 @@ services:
       - ORDERER_ADMIN_TLS_CERTIFICATE=/var/hyperledger/orderer/tls/server.crt
       - ORDERER_ADMIN_TLS_PRIVATEKEY=/var/hyperledger/orderer/tls/server.key
       - ORDERER_ADMIN_TLS_ROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
-      - ORDERER_ADMIN_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/clientroots/tlsca.laborg.pem,/var/hyperledger/orderer/tls/clientroots/tlsca.courtorg.pem]
+      - ORDERER_ADMIN_TLS_CLIENTROOTCAS=[/var/hyperledger/orderer/tls/ca.crt]
       - ORDERER_ADMIN_LISTENADDRESS=0.0.0.0:7153
 
       # Operations & Metrics
