@@ -137,16 +137,27 @@ docker images | grep hyperledger
 TESTING THE SETUP
 =================
 
+TEST SCRIPT FEATURES:
+- Validates all required tools (Docker, Fabric binaries, jq, etc.)
+- Checks configuration files existence and syntax
+- Validates MSP directory structures (org-level and node-level)
+- Verifies NodeOUs config.yaml files
+- Tests TLS directory structures
+- Validates docker-compose files
+- Tests CA container health and API responsiveness
+- Optionally runs crypto generation and validates output
+- Tests configtx.yaml genesis block generation
+
 # Test HOT BLOCKCHAIN (Active Investigation Chain)
 cd ~/FYPBcoc/hot-blockchain
 
-# Quick validation (no crypto generation)
+# Quick validation (no crypto generation) - RECOMMENDED FIRST
 ./scripts/test-ca-setup.sh --skip-crypto
 
-# Full test (generates crypto material)
+# Full test (starts CAs and generates crypto material)
 ./scripts/test-ca-setup.sh
 
-# Manual crypto generation
+# Manual crypto generation (if CAs already running)
 docker-compose -f docker-compose-ca.yaml up -d
 sleep 15
 ./scripts/generate-crypto.sh
@@ -154,16 +165,28 @@ sleep 15
 # Test COLD BLOCKCHAIN (Archival Chain)
 cd ~/FYPBcoc/cold-blockchain
 
-# Quick validation (no crypto generation)
+# Quick validation (no crypto generation) - RECOMMENDED FIRST
 ./scripts/test-ca-setup.sh --skip-crypto
 
-# Full test (generates crypto material)
+# Full test (starts CAs and generates crypto material)
 ./scripts/test-ca-setup.sh
 
-# Manual crypto generation
+# Manual crypto generation (if CAs already running)
 docker-compose -f docker-compose-ca.yaml up -d
 sleep 15
 ./scripts/generate-crypto.sh
+
+WHAT THE TESTS VALIDATE:
+========================
+1. Tool availability: Docker, docker-compose, fabric-ca-client, configtxgen, peer, jq, tree
+2. Configuration files: configtx.yaml, docker-compose-ca.yaml, CA configs
+3. MSP structure: Org-level MSPs with admincerts/, cacerts/, tlscacerts/
+4. Node MSPs: Local MSPs for orderers and peers with all required directories
+5. NodeOUs: config.yaml files with proper OU definitions
+6. TLS structure: TLS directories for all nodes
+7. CA health: Container status and API responsiveness
+8. Crypto generation: Complete certificate and key generation
+9. Genesis block: configtx.yaml validation
 
 PROJECT STRUCTURE
 =================
