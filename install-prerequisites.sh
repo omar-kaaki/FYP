@@ -164,9 +164,8 @@ if ! sudo apt update 2>&1 | tee /tmp/apt-update.log; then
     fi
 fi
 
-# Try apt upgrade (optional, continue if fails)
-echo "Upgrading packages (this may take a while)..."
-sudo apt upgrade -y 2>/dev/null || echo "Warning: apt upgrade had issues, continuing..."
+# Skip apt upgrade to avoid kernel updates
+echo "Skipping package upgrades (only installing required packages)..."
 
 # Install core tools (allow unauthenticated if needed)
 echo "Installing core tools..."
