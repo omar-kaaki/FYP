@@ -1,10 +1,11 @@
 # Fabric CA Server Configuration - LabOrg Identity CA
 # Organization: LabOrg
-# CA Name: ca.laborg.example.com
+# CA Name: ca.laborg.cold.coc.com
+# Blockchain: Cold Chain (Archival)
 
 version: 1.5.15
 
-port: 7055
+port: 7155
 
 debug: false
 
@@ -19,7 +20,7 @@ tls:
     certfiles:
 
 ca:
-  name: ca.laborg.example.com
+  name: ca.laborg.cold.coc.com
   keyfile:
   certfile:
   chainfile:
@@ -81,7 +82,7 @@ signing:
       expiry: 8760h
 
 csr:
-  cn: ca.laborg.example.com
+  cn: ca.laborg.cold.coc.com
   keyrequest:
     algo: ecdsa
     size: 256
@@ -92,7 +93,7 @@ csr:
       O: "LabOrg"
       OU: "Fabric CA"
   hosts:
-    - ca.laborg.example.com
+    - ca.laborg.cold.coc.com
     - localhost
   ca:
     expiry: 131400h
@@ -127,7 +128,7 @@ intermediate:
       keyfile:
 
 operations:
-  listenAddress: 0.0.0.0:17055
+  listenAddress: 0.0.0.0:17155
   tls:
     enabled: false
     cert:

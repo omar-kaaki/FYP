@@ -1,0 +1,135 @@
+# docker-compose-ca.yaml - Certificate Authorities for COLD Blockchain
+# Hyperledger Fabric v2.5.14
+# FYP Blockchain - Archival Chain
+#
+# This file defines 6 CA containers for cold-blockchain:
+# - OrdererOrg: Identity CA (7154) + TLS CA (8154)
+# - LabOrg: Identity CA (7155) + TLS CA (8155)
+# - CourtOrg: Identity CA (7156) + TLS CA (8156)
+
+version: '3.7'
+
+networks:
+  cold-network:
+    name: cold-blockchain-network
+
+services:
+  # OrdererOrg - Identity CA
+  ca.ordererorg.cold.coc.com:
+    image: hyperledger/fabric-ca:1.5.15
+    container_name: ca.ordererorg.cold.coc.com
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca.ordererorg.cold.coc.com
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=7154
+      - FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS=0.0.0.0:17154
+    ports:
+      - "7154:7154"
+      - "17154:17154"
+    command: sh -c 'fabric-ca-server start -b ca-admin:ca-adminpw -d'
+    volumes:
+      - /home/user/FYPBcoc/cold-blockchain/crypto-config/ordererOrganizations/ordererorg.cold.coc.com/ca:/etc/hyperledger/fabric-ca-server
+      - /home/user/FYPBcoc/cold-blockchain/ca-config/ordererorg-ca/fabric-ca-server-config.yaml:/etc/hyperledger/fabric-ca-server/fabric-ca-server-config.yaml
+    networks:
+      - cold-network
+
+  # OrdererOrg - TLS CA
+  tlsca.ordererorg.cold.coc.com:
+    image: hyperledger/fabric-ca:1.5.15
+    container_name: tlsca.ordererorg.cold.coc.com
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=tlsca.ordererorg.cold.coc.com
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=8154
+      - FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS=0.0.0.0:18154
+    ports:
+      - "8154:8154"
+      - "18154:18154"
+    command: sh -c 'fabric-ca-server start -b tls-ca-admin:tlscapw -d'
+    volumes:
+      - /home/user/FYPBcoc/cold-blockchain/crypto-config/ordererOrganizations/ordererorg.cold.coc.com/tlsca:/etc/hyperledger/fabric-ca-server
+      - /home/user/FYPBcoc/cold-blockchain/ca-config/ordererorg-tlsca/fabric-ca-server-config.yaml:/etc/hyperledger/fabric-ca-server/fabric-ca-server-config.yaml
+    networks:
+      - cold-network
+
+  # LabOrg - Identity CA
+  ca.laborg.cold.coc.com:
+    image: hyperledger/fabric-ca:1.5.15
+    container_name: ca.laborg.cold.coc.com
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca.laborg.cold.coc.com
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=7155
+      - FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS=0.0.0.0:17155
+    ports:
+      - "7155:7155"
+      - "17155:17155"
+    command: sh -c 'fabric-ca-server start -b ca-admin:ca-adminpw -d'
+    volumes:
+      - /home/user/FYPBcoc/cold-blockchain/crypto-config/peerOrganizations/laborg.cold.coc.com/ca:/etc/hyperledger/fabric-ca-server
+      - /home/user/FYPBcoc/cold-blockchain/ca-config/laborg-ca/fabric-ca-server-config.yaml:/etc/hyperledger/fabric-ca-server/fabric-ca-server-config.yaml
+    networks:
+      - cold-network
+
+  # LabOrg - TLS CA
+  tlsca.laborg.cold.coc.com:
+    image: hyperledger/fabric-ca:1.5.15
+    container_name: tlsca.laborg.cold.coc.com
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=tlsca.laborg.cold.coc.com
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=8155
+      - FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS=0.0.0.0:18155
+    ports:
+      - "8155:8155"
+      - "18155:18155"
+    command: sh -c 'fabric-ca-server start -b tls-ca-admin:tlscapw -d'
+    volumes:
+      - /home/user/FYPBcoc/cold-blockchain/crypto-config/peerOrganizations/laborg.cold.coc.com/tlsca:/etc/hyperledger/fabric-ca-server
+      - /home/user/FYPBcoc/cold-blockchain/ca-config/laborg-tlsca/fabric-ca-server-config.yaml:/etc/hyperledger/fabric-ca-server/fabric-ca-server-config.yaml
+    networks:
+      - cold-network
+
+  # CourtOrg - Identity CA
+  ca.courtorg.cold.coc.com:
+    image: hyperledger/fabric-ca:1.5.15
+    container_name: ca.courtorg.cold.coc.com
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=ca.courtorg.cold.coc.com
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=7156
+      - FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS=0.0.0.0:17156
+    ports:
+      - "7156:7156"
+      - "17156:17156"
+    command: sh -c 'fabric-ca-server start -b ca-admin:ca-adminpw -d'
+    volumes:
+      - /home/user/FYPBcoc/cold-blockchain/crypto-config/peerOrganizations/courtorg.cold.coc.com/ca:/etc/hyperledger/fabric-ca-server
+      - /home/user/FYPBcoc/cold-blockchain/ca-config/courtorg-ca/fabric-ca-server-config.yaml:/etc/hyperledger/fabric-ca-server/fabric-ca-server-config.yaml
+    networks:
+      - cold-network
+
+  # CourtOrg - TLS CA
+  tlsca.courtorg.cold.coc.com:
+    image: hyperledger/fabric-ca:1.5.15
+    container_name: tlsca.courtorg.cold.coc.com
+    environment:
+      - FABRIC_CA_HOME=/etc/hyperledger/fabric-ca-server
+      - FABRIC_CA_SERVER_CA_NAME=tlsca.courtorg.cold.coc.com
+      - FABRIC_CA_SERVER_TLS_ENABLED=true
+      - FABRIC_CA_SERVER_PORT=8156
+      - FABRIC_CA_SERVER_OPERATIONS_LISTENADDRESS=0.0.0.0:18156
+    ports:
+      - "8156:8156"
+      - "18156:18156"
+    command: sh -c 'fabric-ca-server start -b tls-ca-admin:tlscapw -d'
+    volumes:
+      - /home/user/FYPBcoc/cold-blockchain/crypto-config/peerOrganizations/courtorg.cold.coc.com/tlsca:/etc/hyperledger/fabric-ca-server
+      - /home/user/FYPBcoc/cold-blockchain/ca-config/courtorg-tlsca/fabric-ca-server-config.yaml:/etc/hyperledger/fabric-ca-server/fabric-ca-server-config.yaml
+    networks:
+      - cold-network

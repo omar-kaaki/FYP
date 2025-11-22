@@ -1,10 +1,11 @@
-# Fabric CA Server Configuration - CourtOrg TLS CA
-# Organization: CourtOrg
-# CA Name: tlsca.courtorg.example.com
+# Fabric CA Server Configuration - OrdererOrg Identity CA
+# Organization: OrdererOrg
+# CA Name: ca.ordererorg.hot.coc.com
+# Blockchain: Hot Chain (Active Investigation)
 
 version: 1.5.15
 
-port: 8056
+port: 7054
 
 debug: false
 
@@ -19,7 +20,7 @@ tls:
     certfiles:
 
 ca:
-  name: tlsca.courtorg.example.com
+  name: ca.ordererorg.hot.coc.com
   keyfile:
   certfile:
   chainfile:
@@ -30,16 +31,17 @@ crl:
 registry:
   maxenrollments: -1
   identities:
-    - name: tls-ca-admin
-      pass: tlscapw
+    - name: ca-admin
+      pass: ca-adminpw
       type: client
       affiliation: ""
       attrs:
-        hf.Registrar.Roles: "peer,client,admin"
+        hf.Registrar.Roles: "peer,client,admin,orderer"
         hf.Registrar.Attributes: "*"
         hf.Revoker: true
         hf.GenCRL: true
         admin: true
+        hf.AffiliationMgr: true
 
 db:
   type: sqlite3
@@ -52,9 +54,8 @@ db:
       keyfile:
 
 affiliations:
-  courtorg:
-    - legal
-    - validation
+  ordererorg:
+    - department1
 
 signing:
   default:
@@ -80,7 +81,7 @@ signing:
       expiry: 8760h
 
 csr:
-  cn: tlsca.courtorg.example.com
+  cn: ca.ordererorg.hot.coc.com
   keyrequest:
     algo: ecdsa
     size: 256
@@ -88,10 +89,10 @@ csr:
     - C: US
       ST: "California"
       L: "San Francisco"
-      O: "CourtOrg"
-      OU: "Fabric TLS CA"
+      O: "OrdererOrg"
+      OU: "Fabric CA"
   hosts:
-    - tlsca.courtorg.example.com
+    - ca.ordererorg.hot.coc.com
     - localhost
   ca:
     expiry: 131400h
@@ -126,7 +127,7 @@ intermediate:
       keyfile:
 
 operations:
-  listenAddress: 0.0.0.0:18056
+  listenAddress: 0.0.0.0:17054
   tls:
     enabled: false
     cert:

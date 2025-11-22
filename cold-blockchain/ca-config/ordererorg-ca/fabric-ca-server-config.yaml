@@ -1,10 +1,11 @@
-# Fabric CA Server Configuration - OrdererOrg TLS CA
+# Fabric CA Server Configuration - OrdererOrg Identity CA
 # Organization: OrdererOrg
-# CA Name: tlsca.ordererorg.example.com
+# CA Name: ca.ordererorg.cold.coc.com
+# Blockchain: Cold Chain (Archival)
 
 version: 1.5.15
 
-port: 8054
+port: 7154
 
 debug: false
 
@@ -19,7 +20,7 @@ tls:
     certfiles:
 
 ca:
-  name: tlsca.ordererorg.example.com
+  name: ca.ordererorg.cold.coc.com
   keyfile:
   certfile:
   chainfile:
@@ -30,8 +31,8 @@ crl:
 registry:
   maxenrollments: -1
   identities:
-    - name: tls-ca-admin
-      pass: tlscapw
+    - name: ca-admin
+      pass: ca-adminpw
       type: client
       affiliation: ""
       attrs:
@@ -40,6 +41,7 @@ registry:
         hf.Revoker: true
         hf.GenCRL: true
         admin: true
+        hf.AffiliationMgr: true
 
 db:
   type: sqlite3
@@ -79,7 +81,7 @@ signing:
       expiry: 8760h
 
 csr:
-  cn: tlsca.ordererorg.example.com
+  cn: ca.ordererorg.cold.coc.com
   keyrequest:
     algo: ecdsa
     size: 256
@@ -88,9 +90,9 @@ csr:
       ST: "California"
       L: "San Francisco"
       O: "OrdererOrg"
-      OU: "Fabric TLS CA"
+      OU: "Fabric CA"
   hosts:
-    - tlsca.ordererorg.example.com
+    - ca.ordererorg.cold.coc.com
     - localhost
   ca:
     expiry: 131400h
@@ -125,7 +127,7 @@ intermediate:
       keyfile:
 
 operations:
-  listenAddress: 0.0.0.0:18054
+  listenAddress: 0.0.0.0:17154
   tls:
     enabled: false
     cert:

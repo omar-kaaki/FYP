@@ -1,10 +1,11 @@
-# Fabric CA Server Configuration - CourtOrg Identity CA
+# Fabric CA Server Configuration - CourtOrg TLS CA
 # Organization: CourtOrg
-# CA Name: ca.courtorg.example.com
+# CA Name: tlsca.courtorg.cold.coc.com
+# Blockchain: Cold Chain (Archival)
 
 version: 1.5.15
 
-port: 7056
+port: 8156
 
 debug: false
 
@@ -19,7 +20,7 @@ tls:
     certfiles:
 
 ca:
-  name: ca.courtorg.example.com
+  name: tlsca.courtorg.cold.coc.com
   keyfile:
   certfile:
   chainfile:
@@ -30,8 +31,8 @@ crl:
 registry:
   maxenrollments: -1
   identities:
-    - name: ca-admin
-      pass: ca-adminpw
+    - name: tls-ca-admin
+      pass: tlscapw
       type: client
       affiliation: ""
       attrs:
@@ -54,7 +55,7 @@ db:
 
 affiliations:
   courtorg:
-    - legal
+    - judicial
     - validation
 
 signing:
@@ -81,7 +82,7 @@ signing:
       expiry: 8760h
 
 csr:
-  cn: ca.courtorg.example.com
+  cn: tlsca.courtorg.cold.coc.com
   keyrequest:
     algo: ecdsa
     size: 256
@@ -90,9 +91,9 @@ csr:
       ST: "California"
       L: "San Francisco"
       O: "CourtOrg"
-      OU: "Fabric CA"
+      OU: "TLS CA"
   hosts:
-    - ca.courtorg.example.com
+    - tlsca.courtorg.cold.coc.com
     - localhost
   ca:
     expiry: 131400h
@@ -127,7 +128,7 @@ intermediate:
       keyfile:
 
 operations:
-  listenAddress: 0.0.0.0:17056
+  listenAddress: 0.0.0.0:18156
   tls:
     enabled: false
     cert:

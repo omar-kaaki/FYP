@@ -1,0 +1,140 @@
+# Fabric CA Server Configuration - LabOrg Identity CA
+# Organization: LabOrg
+# CA Name: ca.laborg.hot.coc.com
+# Blockchain: Hot Chain (Active Investigation)
+
+version: 1.5.15
+
+port: 7055
+
+debug: false
+
+crlsizelimit: 512000
+
+tls:
+  enabled: true
+  certfile:
+  keyfile:
+  clientauth:
+    type: noclientcert
+    certfiles:
+
+ca:
+  name: ca.laborg.hot.coc.com
+  keyfile:
+  certfile:
+  chainfile:
+
+crl:
+  expiry: 24h
+
+registry:
+  maxenrollments: -1
+  identities:
+    - name: ca-admin
+      pass: ca-adminpw
+      type: client
+      affiliation: ""
+      attrs:
+        hf.Registrar.Roles: "peer,client,admin"
+        hf.Registrar.Attributes: "*"
+        hf.Revoker: true
+        hf.GenCRL: true
+        admin: true
+        hf.AffiliationMgr: true
+
+db:
+  type: sqlite3
+  datasource: fabric-ca-server.db
+  tls:
+    enabled: false
+    certfiles:
+    client:
+      certfile:
+      keyfile:
+
+affiliations:
+  laborg:
+    - dfir
+    - forensics
+
+signing:
+  default:
+    usage:
+      - digital signature
+    expiry: 8760h
+  profiles:
+    ca:
+      usage:
+        - cert sign
+        - crl sign
+      expiry: 43800h
+      caconstraint:
+        isca: true
+        maxpathlen: 0
+    tls:
+      usage:
+        - signing
+        - key encipherment
+        - server auth
+        - client auth
+        - key agreement
+      expiry: 8760h
+
+csr:
+  cn: ca.laborg.hot.coc.com
+  keyrequest:
+    algo: ecdsa
+    size: 256
+  names:
+    - C: US
+      ST: "California"
+      L: "San Francisco"
+      O: "LabOrg"
+      OU: "Fabric CA"
+  hosts:
+    - ca.laborg.hot.coc.com
+    - localhost
+  ca:
+    expiry: 131400h
+    pathlength: 1
+
+bccsp:
+  default: SW
+  sw:
+    hash: SHA2
+    security: 256
+    filekeystore:
+      keystore: msp/keystore
+
+cacount:
+
+cafiles:
+
+intermediate:
+  parentserver:
+    url:
+    caname:
+
+  enrollment:
+    hosts:
+    profile:
+    label:
+
+  tls:
+    certfiles:
+    client:
+      certfile:
+      keyfile:
+
+operations:
+  listenAddress: 0.0.0.0:17055
+  tls:
+    enabled: false
+    cert:
+      file:
+    key:
+      file:
+    clientAuthRequired: false
+    clientRootCAs:
+      files: []

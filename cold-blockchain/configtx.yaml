@@ -1,9 +1,10 @@
 # configtx.yaml - Hyperledger Fabric v2.5.14 Network Configuration
 # FYP Blockchain - DFIR Chain of Custody System
+# COLD BLOCKCHAIN - Archival Chain
 #
 # This file defines:
 # - Organizations (OrdererOrg, LabOrg, CourtOrg)
-# - Channel profiles (hot-chain, cold-chain)
+# - Channel profile (cold-chain)
 # - Orderer configuration (Raft consensus)
 # - Application capabilities
 
@@ -23,7 +24,7 @@ Organizations:
   - &OrdererOrg
       Name: OrdererOrg
       ID: OrdererOrgMSP
-      MSPDir: /home/user/FYPBcoc/crypto-config/ordererOrganizations/ordererorg.example.com/msp
+      MSPDir: /home/user/FYPBcoc/cold-blockchain/crypto-config/ordererOrganizations/ordererorg.cold.coc.com/msp
 
       Policies:
         Readers:
@@ -37,13 +38,13 @@ Organizations:
           Rule: "OR('OrdererOrgMSP.admin')"
 
       OrdererEndpoints:
-        - orderer1.ordererorg.example.com:7050
+        - orderer.cold.coc.com:7150
 
   # LabOrg defines the DFIR lab organization (primary evidence handler)
   - &LabOrg
       Name: LabOrg
       ID: LabOrgMSP
-      MSPDir: /home/user/FYPBcoc/crypto-config/peerOrganizations/laborg.example.com/msp
+      MSPDir: /home/user/FYPBcoc/cold-blockchain/crypto-config/peerOrganizations/laborg.cold.coc.com/msp
 
       Policies:
         Readers:
@@ -60,14 +61,14 @@ Organizations:
           Rule: "OR('LabOrgMSP.peer')"
 
       AnchorPeers:
-        - Host: peer0.laborg.example.com
-          Port: 7051
+        - Host: peer0.laborg.cold.coc.com
+          Port: 8051
 
   # CourtOrg defines the court/external validator organization
   - &CourtOrg
       Name: CourtOrg
       ID: CourtOrgMSP
-      MSPDir: /home/user/FYPBcoc/crypto-config/peerOrganizations/courtorg.example.com/msp
+      MSPDir: /home/user/FYPBcoc/cold-blockchain/crypto-config/peerOrganizations/courtorg.cold.coc.com/msp
 
       Policies:
         Readers:
@@ -84,7 +85,7 @@ Organizations:
           Rule: "OR('CourtOrgMSP.peer')"
 
       AnchorPeers:
-        - Host: peer0.courtorg.example.com
+        - Host: peer0.courtorg.cold.coc.com
           Port: 9051
 
 ################################################################################
@@ -199,7 +200,7 @@ Orderer: &OrdererDefaults
 
   # Addresses of orderer nodes
   Addresses:
-    - orderer1.ordererorg.example.com:7050
+    - orderer.cold.coc.com:7150
 
   # Batch Timeout: The amount of time to wait before creating a batch
   BatchTimeout: 2s
@@ -213,10 +214,10 @@ Orderer: &OrdererDefaults
   # Raft Configuration
   EtcdRaft:
     Consenters:
-      - Host: orderer1.ordererorg.example.com
-        Port: 7050
-        ClientTLSCert: /home/user/FYPBcoc/crypto-config/ordererOrganizations/ordererorg.example.com/orderers/orderer1.ordererorg.example.com/tls/server.crt
-        ServerTLSCert: /home/user/FYPBcoc/crypto-config/ordererOrganizations/ordererorg.example.com/orderers/orderer1.ordererorg.example.com/tls/server.crt
+      - Host: orderer.cold.coc.com
+        Port: 7150
+        ClientTLSCert: /home/user/FYPBcoc/cold-blockchain/crypto-config/ordererOrganizations/ordererorg.cold.coc.com/orderers/orderer.cold.coc.com/tls/server.crt
+        ServerTLSCert: /home/user/FYPBcoc/cold-blockchain/crypto-config/ordererOrganizations/ordererorg.cold.coc.com/orderers/orderer.cold.coc.com/tls/server.crt
 
     # Options to be specified for all the etcdraft nodes. The values here
     # are the defaults for all new channels and can be modified on a
@@ -287,22 +288,8 @@ Channel: &ChannelDefaults
 ################################################################################
 
 Profiles:
-  # HotChainGenesis defines the genesis block for the hot-chain channel
-  HotChainGenesis:
-    <<: *ChannelDefaults
-    Orderer:
-      <<: *OrdererDefaults
-      Organizations:
-        - *OrdererOrg
-      Capabilities: *OrdererCapabilities
-    Application:
-      <<: *ApplicationDefaults
-      Organizations:
-        - *LabOrg
-        - *CourtOrg
-      Capabilities: *ApplicationCapabilities
-
   # ColdChainGenesis defines the genesis block for the cold-chain channel
+  # Cold chain includes both LabOrg and CourtOrg for archival and validation
   ColdChainGenesis:
     <<: *ChannelDefaults
     Orderer:
