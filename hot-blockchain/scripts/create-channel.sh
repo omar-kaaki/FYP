@@ -27,7 +27,7 @@ CRYPTO_DIR="${BASE_DIR}/crypto-config"
 CHANNEL_NAME="hot-chain"
 ORDERER_ADDRESS="localhost:7050"
 ORDERER_ADMIN_ADDRESS="localhost:7053"
-ORDERER_TLS_CA="${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/tlsca/tlsca.ordererorg.hot.coc.com-cert.pem"
+ORDERER_TLS_CA="${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/tlsca/tls-cert.pem"
 ORDERER_ADMIN_TLS_CERT="${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/orderers/orderer.hot.coc.com/tls/server.crt"
 ORDERER_ADMIN_TLS_KEY="${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/orderers/orderer.hot.coc.com/tls/server.key"
 

@@ -28,7 +28,7 @@ CRYPTO_DIR="${BASE_DIR}/crypto-config"
 CHANNEL_NAME="cold-chain"
 ORDERER_ADDRESS="localhost:7150"
 ORDERER_ADMIN_ADDRESS="localhost:7153"
-ORDERER_TLS_CA="${CRYPTO_DIR}/ordererOrganizations/ordererorg.cold.coc.com/tlsca/tlsca.ordererorg.cold.coc.com-cert.pem"
+ORDERER_TLS_CA="${CRYPTO_DIR}/ordererOrganizations/ordererorg.cold.coc.com/tlsca/tls-cert.pem"
 ORDERER_ADMIN_TLS_CERT="${CRYPTO_DIR}/ordererOrganizations/ordererorg.cold.coc.com/orderers/orderer.cold.coc.com/tls/server.crt"
 ORDERER_ADMIN_TLS_KEY="${CRYPTO_DIR}/ordererOrganizations/ordererorg.cold.coc.com/orderers/orderer.cold.coc.com/tls/server.key"
 
