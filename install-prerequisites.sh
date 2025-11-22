@@ -76,16 +76,90 @@ check_root() {
     fi
 }
 
+# Function to fix Kali GPG keys
+fix_kali_gpg() {
+    echo "Attempting to fix Kali GPG keys..."
+
+    # Try multiple methods
+    sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys ED65462EC8D5E4C5 2>/dev/null || \
+    sudo wget -O /etc/apt/trusted.gpg.d/kali-archive-keyring.asc https://archive.kali.org/archive-key.asc 2>/dev/null || \
+    sudo apt install --reinstall kali-archive-keyring -y --allow-unauthenticated 2>/dev/null
+
+    # Try update again
+    sudo apt update 2>/dev/null
+}
+
+# Function to detect OS
+detect_os() {
+    if [ -f /etc/os-release ]; then
+        . /etc/os-release
+        OS=$NAME
+        OS_VERSION=$VERSION_ID
+    else
+        OS=$(uname -s)
+        OS_VERSION=$(uname -r)
+    fi
+}
+
+# ============================================================================
+# STEP 0: Pre-flight checks
+# ============================================================================
+
+check_root
+detect_os
+
+echo "Detected OS: $OS"
+echo ""
+
 # ============================================================================
 # STEP 1: Update System and Install Core Tools
 # ============================================================================
 
 print_section "STEP 1: Updating system and installing core tools"
 
-sudo apt update
-sudo apt upgrade -y
+# Try apt update with error handling
+if ! sudo apt update 2>&1 | tee /tmp/apt-update.log; then
+    print_error "apt update failed"
 
-sudo apt install -y \
+    # Check if it's a GPG key issue
+    if grep -qi "NO_PUBKEY\|not signed" /tmp/apt-update.log; then
+        echo ""
+        echo "Detected GPG key issue. Attempting to fix..."
+        fix_kali_gpg
+
+        # Check if fix worked
+        if sudo apt update 2>/dev/null; then
+            print_success "GPG key issue resolved"
+        else
+            print_error "Could not fix GPG key issue automatically"
+            echo ""
+            echo "You can try manually:"
+            echo "  sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-keys ED65462EC8D5E4C5"
+            echo "  sudo apt install --reinstall kali-archive-keyring -y --allow-unauthenticated"
+            echo ""
+            read -p "Continue anyway? (y/n): " -n 1 -r
+            echo
+            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+                exit 1
+            fi
+        fi
+    else
+        echo ""
+        read -p "apt update failed. Continue anyway? (y/n): " -n 1 -r
+        echo
+        if [[ ! $REPLY =~ ^[Yy]$ ]]; then
+            exit 1
+        fi
+    fi
+fi
+
+# Try apt upgrade (optional, continue if fails)
+echo "Upgrading packages (this may take a while)..."
+sudo apt upgrade -y 2>/dev/null || echo "Warning: apt upgrade had issues, continuing..."
+
+# Install core tools (allow unauthenticated if needed)
+echo "Installing core tools..."
+if ! sudo apt install -y \
     git \
     curl \
     wget \
@@ -97,7 +171,23 @@ sudo apt install -y \
     tree \
     htop \
     python3 \
-    python3-pip
+    python3-pip 2>/dev/null; then
+
+    echo "Retrying with --allow-unauthenticated..."
+    sudo apt install -y --allow-unauthenticated \
+        git \
+        curl \
+        wget \
+        tar \
+        unzip \
+        jq \
+        openssl \
+        build-essential \
+        tree \
+        htop \
+        python3 \
+        python3-pip
+fi
 
 print_success "Core tools installed"
 
@@ -110,17 +200,27 @@ print_section "STEP 2: Installing Docker and Docker Compose"
 if command_exists docker; then
     print_success "Docker is already installed ($(docker --version))"
 else
-    sudo apt install -y docker.io
-    sudo systemctl start docker
-    sudo systemctl enable docker
-    print_success "Docker installed successfully"
+    if sudo apt install -y docker.io 2>/dev/null || sudo apt install -y --allow-unauthenticated docker.io; then
+        sudo systemctl start docker 2>/dev/null || true
+        sudo systemctl enable docker 2>/dev/null || true
+        print_success "Docker installed successfully"
+    else
+        print_error "Failed to install Docker"
+        echo "Please install Docker manually: https://docs.docker.com/engine/install/"
+        exit 1
+    fi
 fi
 
 if command_exists docker-compose; then
     print_success "Docker Compose is already installed ($(docker-compose --version))"
 else
-    sudo apt install -y docker-compose
-    print_success "Docker Compose installed successfully"
+    if sudo apt install -y docker-compose 2>/dev/null || sudo apt install -y --allow-unauthenticated docker-compose; then
+        print_success "Docker Compose installed successfully"
+    else
+        print_error "Failed to install Docker Compose"
+        echo "Please install Docker Compose manually"
+        exit 1
+    fi
 fi
 
 # Add user to docker group
@@ -139,6 +239,24 @@ fi
 
 print_section "STEP 3: Installing Go ${GO_VERSION}"
 
+# Function to download with retry
+download_with_retry() {
+    local url=$1
+    local output=$2
+    local max_attempts=3
+    local attempt=1
+
+    while [ $attempt -le $max_attempts ]; do
+        echo "Download attempt $attempt/$max_attempts..."
+        if wget -q --show-progress "$url" -O "$output" 2>/dev/null || curl -fsSL "$url" -o "$output" 2>/dev/null; then
+            return 0
+        fi
+        attempt=$((attempt + 1))
+        sleep 2
+    done
+    return 1
+}
+
 if command_exists go; then
     CURRENT_GO_VERSION=$(go version | awk '{print $3}' | sed 's/go//')
     if [[ "$CURRENT_GO_VERSION" == "$GO_VERSION" ]]; then
@@ -148,21 +266,30 @@ if command_exists go; then
         echo "Installing Go ${GO_VERSION}..."
 
         cd ~
-        wget https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz
-        sudo rm -rf /usr/local/go
-        sudo tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz
-        rm go${GO_VERSION}.linux-amd64.tar.gz
-
-        print_success "Go ${GO_VERSION} installed"
+        if download_with_retry "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" "go${GO_VERSION}.linux-amd64.tar.gz"; then
+            sudo rm -rf /usr/local/go
+            sudo tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz
+            rm go${GO_VERSION}.linux-amd64.tar.gz
+            print_success "Go ${GO_VERSION} installed"
+        else
+            print_error "Failed to download Go ${GO_VERSION}"
+            echo "Please download manually from: https://go.dev/dl/"
+            exit 1
+        fi
     fi
 else
     cd ~
-    wget https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz
-    sudo rm -rf /usr/local/go
-    sudo tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz
-    rm go${GO_VERSION}.linux-amd64.tar.gz
-
-    print_success "Go ${GO_VERSION} installed"
+    echo "Downloading Go ${GO_VERSION}..."
+    if download_with_retry "https://go.dev/dl/go${GO_VERSION}.linux-amd64.tar.gz" "go${GO_VERSION}.linux-amd64.tar.gz"; then
+        sudo rm -rf /usr/local/go
+        sudo tar -C /usr/local -xzf go${GO_VERSION}.linux-amd64.tar.gz
+        rm go${GO_VERSION}.linux-amd64.tar.gz
+        print_success "Go ${GO_VERSION} installed"
+    else
+        print_error "Failed to download Go ${GO_VERSION}"
+        echo "Please download manually from: https://go.dev/dl/"
+        exit 1
+    fi
 fi
 
 # Add Go to PATH
