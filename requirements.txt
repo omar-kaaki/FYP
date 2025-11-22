@@ -136,7 +136,23 @@ docker images | grep hyperledger
 
 TESTING THE SETUP
 =================
-cd ~/FYPBcoc
+
+# Test HOT BLOCKCHAIN (Active Investigation Chain)
+cd ~/FYPBcoc/hot-blockchain
+
+# Quick validation (no crypto generation)
+./scripts/test-ca-setup.sh --skip-crypto
+
+# Full test (generates crypto material)
+./scripts/test-ca-setup.sh
+
+# Manual crypto generation
+docker-compose -f docker-compose-ca.yaml up -d
+sleep 15
+./scripts/generate-crypto.sh
+
+# Test COLD BLOCKCHAIN (Archival Chain)
+cd ~/FYPBcoc/cold-blockchain
 
 # Quick validation (no crypto generation)
 ./scripts/test-ca-setup.sh --skip-crypto
@@ -153,58 +169,92 @@ PROJECT STRUCTURE
 =================
 FYPBcoc/
 ├── bin/                          # Fabric binaries
-├── ca-config/                    # CA server configurations
-│   ├── ordererorg-ca/
-│   ├── ordererorg-tlsca/
-│   ├── laborg-ca/
-│   ├── laborg-tlsca/
-│   ├── courtorg-ca/
-│   └── courtorg-tlsca/
-├── crypto-config/                # Generated crypto material (gitignored)
-│   ├── ordererOrganizations/
-│   └── peerOrganizations/
-├── scripts/                      # Automation scripts
-│   ├── generate-crypto.sh
-│   ├── test-ca-setup.sh
-│   └── README.md
-├── configtx.yaml                 # Channel configuration
-├── docker-compose-ca.yaml        # CA containers
+├── hot-blockchain/               # HOT CHAIN (Active Investigation)
+│   ├── ca-config/               # CA server configurations
+│   │   ├── ordererorg-ca/
+│   │   ├── ordererorg-tlsca/
+│   │   ├── laborg-ca/
+│   │   └── laborg-tlsca/
+│   ├── crypto-config/           # Generated crypto material (gitignored)
+│   ├── scripts/                 # Automation scripts
+│   ├── chaincode/               # Hot chain chaincode
+│   ├── configtx.yaml            # Hot chain configuration
+│   └── docker-compose-ca.yaml   # Hot chain CAs
+├── cold-blockchain/              # COLD CHAIN (Archival)
+│   ├── ca-config/               # CA server configurations
+│   │   ├── ordererorg-ca/
+│   │   ├── ordererorg-tlsca/
+│   │   ├── laborg-ca/
+│   │   ├── laborg-tlsca/
+│   │   ├── courtorg-ca/
+│   │   └── courtorg-tlsca/
+│   ├── crypto-config/           # Generated crypto material (gitignored)
+│   ├── scripts/                 # Automation scripts
+│   ├── chaincode/               # Cold chain chaincode
+│   ├── configtx.yaml            # Cold chain configuration
+│   └── docker-compose-ca.yaml   # Cold chain CAs
 ├── install-prerequisites.sh      # THIS AUTOMATED INSTALLER
 ├── requirements.md               # Detailed documentation
 ├── requirements.txt              # THIS FILE
 └── .gitignore                    # Git ignore rules
 
-CERTIFICATE AUTHORITIES (6 CAs)
-================================
-OrdererOrg Identity CA:     localhost:7054  (ca-admin:ca-adminpw)
-OrdererOrg TLS CA:          localhost:8054  (tls-ca-admin:tlscapw)
-LabOrg Identity CA:         localhost:7055  (ca-admin:ca-adminpw)
-LabOrg TLS CA:              localhost:8055  (tls-ca-admin:tlscapw)
-CourtOrg Identity CA:       localhost:7056  (ca-admin:ca-adminpw)
-CourtOrg TLS CA:            localhost:8056  (tls-ca-admin:tlscapw)
+CERTIFICATE AUTHORITIES
+========================
 
-IDENTITIES (7 total)
-====================
-OrdererOrg:
-  - orderer1.ordererorg.example.com (orderer)
-  - orderer-admin@ordererorg.example.com (admin)
+HOT CHAIN (4 CAs - Active Investigation):
+  OrdererOrg Identity CA:  localhost:7054  (ca-admin:ca-adminpw)
+  OrdererOrg TLS CA:       localhost:8054  (tls-ca-admin:tlscapw)
+  LabOrg Identity CA:      localhost:7055  (ca-admin:ca-adminpw)
+  LabOrg TLS CA:           localhost:8055  (tls-ca-admin:tlscapw)
 
-LabOrg:
-  - peer0.laborg.example.com (peer)
-  - lab-admin@laborg.example.com (admin)
-  - lab-gw@laborg.example.com (gateway client)
+COLD CHAIN (6 CAs - Archival):
+  OrdererOrg Identity CA:  localhost:7154  (ca-admin:ca-adminpw)
+  OrdererOrg TLS CA:       localhost:8154  (tls-ca-admin:tlscapw)
+  LabOrg Identity CA:      localhost:7155  (ca-admin:ca-adminpw)
+  LabOrg TLS CA:           localhost:8155  (tls-ca-admin:tlscapw)
+  CourtOrg Identity CA:    localhost:7156  (ca-admin:ca-adminpw)
+  CourtOrg TLS CA:         localhost:8156  (tls-ca-admin:tlscapw)
 
-CourtOrg:
-  - peer0.courtorg.example.com (peer)
-  - court-admin@courtorg.example.com (admin)
+IDENTITIES
+==========
+
+HOT CHAIN (*.hot.coc.com):
+  OrdererOrg:
+    - orderer.hot.coc.com (orderer)
+    - orderer-admin@ordererorg.hot.coc.com (admin)
+  LabOrg:
+    - peer0.laborg.hot.coc.com (peer)
+    - lab-admin@laborg.hot.coc.com (admin)
+    - lab-gw@laborg.hot.coc.com (gateway client)
+
+COLD CHAIN (*.cold.coc.com):
+  OrdererOrg:
+    - orderer.cold.coc.com (orderer)
+    - orderer-admin@ordererorg.cold.coc.com (admin)
+  LabOrg:
+    - peer0.laborg.cold.coc.com (peer)
+    - lab-admin@laborg.cold.coc.com (admin)
+    - lab-gw@laborg.cold.coc.com (gateway client)
+  CourtOrg:
+    - peer0.courtorg.cold.coc.com (peer)
+    - court-admin@courtorg.cold.coc.com (admin)
 
 NETWORK TOPOLOGY
 ================
-- 1 Orderer node (Raft consensus)
-- 2 Peer nodes (1 per peer org)
-- 2 Channels:
-  * hot-chain: OR('LabOrgMSP.peer')
-  * cold-chain: AND('LabOrgMSP.peer', 'CourtOrgMSP.peer')
+
+HOT BLOCKCHAIN (Active Investigation):
+  - 1 Orderer node (orderer.hot.coc.com:7050)
+  - 1 Peer node (peer0.laborg.hot.coc.com:7051)
+  - Organizations: OrdererOrg, LabOrg
+  - Endorsement: OR('LabOrgMSP.peer')
+
+COLD BLOCKCHAIN (Archival):
+  - 1 Orderer node (orderer.cold.coc.com:7150)
+  - 2 Peer nodes:
+    * peer0.laborg.cold.coc.com:8051
+    * peer0.courtorg.cold.coc.com:9051
+  - Organizations: OrdererOrg, LabOrg, CourtOrg
+  - Endorsement: AND('LabOrgMSP.peer', 'CourtOrgMSP.peer')
 
 TROUBLESHOOTING
 ===============
@@ -232,11 +282,19 @@ Fix:   Check DNS: ping 8.8.8.8
 
 CLEANUP COMMANDS
 ================
-# Stop CA containers
+
+# Stop HOT chain CA containers
+cd ~/FYPBcoc/hot-blockchain
+docker-compose -f docker-compose-ca.yaml down
+
+# Stop COLD chain CA containers
+cd ~/FYPBcoc/cold-blockchain
 docker-compose -f docker-compose-ca.yaml down
 
 # Remove generated crypto material
-rm -rf crypto-config/*
+cd ~/FYPBcoc
+rm -rf hot-blockchain/crypto-config/*
+rm -rf cold-blockchain/crypto-config/*
 rm -rf .fabric-ca-client/
 
 # Remove all Docker containers
@@ -257,11 +315,16 @@ Installation Script:    install-prerequisites.sh
 
 NOTES
 =====
+- Project split into hot-blockchain/ and cold-blockchain/ directories
+- Hot chain: Active investigation (*.hot.coc.com)
+- Cold chain: Archival with court validation (*.cold.coc.com)
 - All paths use absolute references: /home/user/FYPBcoc/
 - Private keys and certificates are gitignored for security
 - Only NodeOUs config.yaml templates are version controlled
 - Run 'source ~/.bashrc' after installation to update PATH
 - Log out/in required after adding user to docker group
-- Test setup with: ./scripts/test-ca-setup.sh --skip-crypto
+- Test hot chain: cd hot-blockchain && ./scripts/test-ca-setup.sh --skip-crypto
+- Test cold chain: cd cold-blockchain && ./scripts/test-ca-setup.sh --skip-crypto
 - For production, pin all Docker images to specific versions
 - Apply regular security updates to all system components
+- Dynamic certificate generation using Fabric CA v1.5.15

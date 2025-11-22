@@ -377,12 +377,14 @@ Expected output:
 
 ## Testing the CA Infrastructure
 
-After installation, test the Certificate Authority setup:
+After installation, test the Certificate Authority setup for both blockchains:
 
-### Option 1: Quick Validation (No Crypto Generation)
+### Testing HOT Blockchain (Active Investigation Chain)
+
+#### Option 1: Quick Validation (No Crypto Generation)
 
 ```bash
-cd ~/FYPBcoc
+cd ~/FYPBcoc/hot-blockchain
 
 # Run test script without generating crypto material
 ./scripts/test-ca-setup.sh --skip-crypto
@@ -394,10 +396,10 @@ This will verify:
 - Docker Compose syntax is correct
 - Docker network setup
 
-### Option 2: Full Test (Generate Crypto Material)
+#### Option 2: Full Test (Generate Crypto Material)
 
 ```bash
-cd ~/FYPBcoc
+cd ~/FYPBcoc/hot-blockchain
 
 # Run full test including crypto generation
 # This will start CA containers and generate all certificates
@@ -405,18 +407,62 @@ cd ~/FYPBcoc
 ```
 
 This will:
-1. Start all 6 CA containers
+1. Start all 4 CA containers (OrdererOrg + LabOrg)
 2. Verify CA API health
 3. Generate crypto material for all identities
 4. Validate certificate structure
 5. Test configtx.yaml
 
-### Manual Crypto Generation
-
-If you want to generate crypto material manually:
+#### Manual Crypto Generation
 
 ```bash
-cd ~/FYPBcoc
+cd ~/FYPBcoc/hot-blockchain
+
+# Start CA containers
+docker-compose -f docker-compose-ca.yaml up -d
+
+# Wait for CAs to be ready (10-15 seconds)
+sleep 15
+
+# Generate all crypto material
+./scripts/generate-crypto.sh
+
+# Verify crypto-config directory
+tree -L 4 crypto-config/
+```
+
+### Testing COLD Blockchain (Archival Chain)
+
+#### Option 1: Quick Validation (No Crypto Generation)
+
+```bash
+cd ~/FYPBcoc/cold-blockchain
+
+# Run test script without generating crypto material
+./scripts/test-ca-setup.sh --skip-crypto
+```
+
+#### Option 2: Full Test (Generate Crypto Material)
+
+```bash
+cd ~/FYPBcoc/cold-blockchain
+
+# Run full test including crypto generation
+# This will start CA containers and generate all certificates
+./scripts/test-ca-setup.sh
+```
+
+This will:
+1. Start all 6 CA containers (OrdererOrg + LabOrg + CourtOrg)
+2. Verify CA API health
+3. Generate crypto material for all identities
+4. Validate certificate structure
+5. Test configtx.yaml
+
+#### Manual Crypto Generation
+
+```bash
+cd ~/FYPBcoc/cold-blockchain
 
 # Start CA containers
 docker-compose -f docker-compose-ca.yaml up -d
@@ -436,11 +482,18 @@ tree -L 4 crypto-config/
 To stop CA containers and clean up:
 
 ```bash
-# Stop CA containers
+# Stop HOT chain CA containers
+cd ~/FYPBcoc/hot-blockchain
+docker-compose -f docker-compose-ca.yaml down
+
+# Stop COLD chain CA containers
+cd ~/FYPBcoc/cold-blockchain
 docker-compose -f docker-compose-ca.yaml down
 
 # Remove generated crypto material (optional)
-rm -rf crypto-config/*
+cd ~/FYPBcoc
+rm -rf hot-blockchain/crypto-config/*
+rm -rf cold-blockchain/crypto-config/*
 rm -rf .fabric-ca-client/
 ```
 
@@ -448,6 +501,10 @@ rm -rf .fabric-ca-client/
 
 ## Notes
 
+- **Project Architecture**: Split into `hot-blockchain/` (active investigation) and `cold-blockchain/` (archival)
+- **Hot Chain**: Uses `*.hot.coc.com` domains, includes OrdererOrg + LabOrg only
+- **Cold Chain**: Uses `*.cold.coc.com` domains, includes OrdererOrg + LabOrg + CourtOrg
+- **Dynamic Certificates**: Using Fabric CA v1.5.15 for dynamic certificate issuance
 - This requirements file will be updated as new dependencies are added during development
 - All versions listed are tested and compatible with Hyperledger Fabric v2.5.14 LTS
 - For production deployments, pin all Docker images and dependencies to specific versions
