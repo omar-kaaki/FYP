@@ -1002,6 +1002,175 @@ else
 fi
 
 # ============================================================================
+# PHASE 14: Hyperledger Explorer Validation
+# ============================================================================
+
+print_section "PHASE 14: Hyperledger Explorer Validation"
+
+print_test "Explorer directory exists"
+if [[ -d "${SCRIPT_DIR}/explorer" ]]; then
+    pass "Found explorer/ directory"
+else
+    fail "Missing explorer/ directory"
+fi
+
+print_test "Explorer configuration files exist"
+if [[ -f "${SCRIPT_DIR}/explorer/config.json" ]] && \
+   [[ -f "${SCRIPT_DIR}/explorer/connection-profile/coc-network.json" ]]; then
+    pass "Found Explorer configuration files"
+else
+    fail "Missing Explorer configuration files"
+fi
+
+print_test "Explorer docker-compose exists"
+if [[ -f "${SCRIPT_DIR}/explorer/docker-compose-explorer.yaml" ]]; then
+    pass "Found docker-compose-explorer.yaml"
+else
+    fail "Missing docker-compose-explorer.yaml"
+fi
+
+print_test "Explorer management scripts exist"
+if [[ -f "${SCRIPT_DIR}/explorer/start-explorer.sh" ]] && \
+   [[ -f "${SCRIPT_DIR}/explorer/stop-explorer.sh" ]]; then
+    pass "Found Explorer management scripts"
+else
+    fail "Missing Explorer management scripts"
+fi
+
+print_test "Explorer configuration validation"
+if grep -q "coc-network" "${SCRIPT_DIR}/explorer/config.json" && \
+   grep -q "postgres-explorer" "${SCRIPT_DIR}/explorer/config.json" && \
+   grep -q "fabricexplorer" "${SCRIPT_DIR}/explorer/config.json"; then
+    pass "Explorer configuration is valid"
+else
+    fail "Explorer configuration is incomplete"
+fi
+
+print_test "Explorer connection profile validation"
+if grep -q "hot-chain" "${SCRIPT_DIR}/explorer/connection-profile/coc-network.json" && \
+   grep -q "cold-chain" "${SCRIPT_DIR}/explorer/connection-profile/coc-network.json" && \
+   grep -q "LabOrgMSP" "${SCRIPT_DIR}/explorer/connection-profile/coc-network.json" && \
+   grep -q "CourtOrgMSP" "${SCRIPT_DIR}/explorer/connection-profile/coc-network.json" && \
+   grep -q "OrdererOrgMSP" "${SCRIPT_DIR}/explorer/connection-profile/coc-network.json"; then
+    pass "Connection profile includes both chains and all organizations"
+else
+    fail "Connection profile is incomplete"
+fi
+
+print_test "Explorer peer endpoints validation"
+if grep -q "peer0.laborg.hot.coc.com" "${SCRIPT_DIR}/explorer/connection-profile/coc-network.json" && \
+   grep -q "peer0.laborg.cold.coc.com" "${SCRIPT_DIR}/explorer/connection-profile/coc-network.json" && \
+   grep -q "peer0.courtorg.cold.coc.com" "${SCRIPT_DIR}/explorer/connection-profile/coc-network.json"; then
+    pass "All peer endpoints configured (hot + cold, LabOrg + CourtOrg)"
+else
+    fail "Missing peer endpoints in connection profile"
+fi
+
+print_test "Explorer docker-compose services validation"
+if grep -q "postgres-explorer" "${SCRIPT_DIR}/explorer/docker-compose-explorer.yaml" && \
+   grep -q "explorer" "${SCRIPT_DIR}/explorer/docker-compose-explorer.yaml" && \
+   grep -q "postgres:14-alpine" "${SCRIPT_DIR}/explorer/docker-compose-explorer.yaml" && \
+   grep -q "hyperledger/explorer" "${SCRIPT_DIR}/explorer/docker-compose-explorer.yaml"; then
+    pass "Explorer docker-compose includes PostgreSQL and Explorer services"
+else
+    fail "Explorer docker-compose services incomplete"
+fi
+
+print_test "Explorer network connectivity validation"
+if grep -q "hot-network" "${SCRIPT_DIR}/explorer/docker-compose-explorer.yaml" && \
+   grep -q "cold-network" "${SCRIPT_DIR}/explorer/docker-compose-explorer.yaml" && \
+   grep -q "explorer-network" "${SCRIPT_DIR}/explorer/docker-compose-explorer.yaml"; then
+    pass "Explorer configured to connect to both blockchain networks"
+else
+    fail "Explorer network configuration incomplete"
+fi
+
+print_test "Explorer crypto material mounts validation"
+if grep -q "hot-blockchain/crypto-config" "${SCRIPT_DIR}/explorer/docker-compose-explorer.yaml" && \
+   grep -q "cold-blockchain/crypto-config" "${SCRIPT_DIR}/explorer/docker-compose-explorer.yaml"; then
+    pass "Explorer has access to crypto materials from both chains"
+else
+    fail "Explorer crypto material mounts incomplete"
+fi
+
+# ============================================================================
+# PHASE 15: Database Configuration Validation
+# ============================================================================
+
+print_section "PHASE 15: Database Configuration Validation"
+
+print_test "Database configuration documentation exists"
+if [[ -f "${SCRIPT_DIR}/DATABASE_CONFIGURATION.md" ]]; then
+    pass "Found DATABASE_CONFIGURATION.md"
+else
+    fail "Missing DATABASE_CONFIGURATION.md"
+fi
+
+print_test "Database documentation completeness"
+if grep -q "Block Storage" "${SCRIPT_DIR}/DATABASE_CONFIGURATION.md" && \
+   grep -q "World State Database" "${SCRIPT_DIR}/DATABASE_CONFIGURATION.md" && \
+   grep -q "LevelDB" "${SCRIPT_DIR}/DATABASE_CONFIGURATION.md" && \
+   grep -q "CouchDB" "${SCRIPT_DIR}/DATABASE_CONFIGURATION.md"; then
+    pass "Database documentation covers both LevelDB and CouchDB"
+else
+    fail "Database documentation is incomplete"
+fi
+
+print_test "CouchDB configuration in network docker-compose"
+if grep -q "CORE_LEDGER_STATE_STATEDATABASE=CouchDB" "${SCRIPT_DIR}/hot-blockchain/docker-compose-network.yaml" && \
+   grep -q "CORE_LEDGER_STATE_STATEDATABASE=CouchDB" "${SCRIPT_DIR}/cold-blockchain/docker-compose-network.yaml"; then
+    pass "CouchDB configured for world state on both chains"
+else
+    fail "CouchDB configuration missing or incomplete"
+fi
+
+# ============================================================================
+# PHASE 16: Master Setup Script Validation
+# ============================================================================
+
+print_section "PHASE 16: Master Setup Script Validation"
+
+print_test "Master setup script exists"
+if [[ -f "${SCRIPT_DIR}/setup.sh" ]]; then
+    pass "Found setup.sh"
+else
+    fail "Missing setup.sh"
+fi
+
+print_test "Setup script is executable"
+if [[ -x "${SCRIPT_DIR}/setup.sh" ]]; then
+    pass "setup.sh is executable"
+else
+    fail "setup.sh is not executable"
+fi
+
+print_test "Setup script includes all deployment phases"
+if grep -q "Install Prerequisites" "${SCRIPT_DIR}/setup.sh" && \
+   grep -q "Certificate Authorities" "${SCRIPT_DIR}/setup.sh" && \
+   grep -q "Crypto Materials" "${SCRIPT_DIR}/setup.sh" && \
+   grep -q "Channel Artifacts" "${SCRIPT_DIR}/setup.sh" && \
+   grep -q "Blockchain Networks" "${SCRIPT_DIR}/setup.sh" && \
+   grep -q "Deploy Chaincode" "${SCRIPT_DIR}/setup.sh" && \
+   grep -q "Evidence Upload Service" "${SCRIPT_DIR}/setup.sh" && \
+   grep -q "IPFS Infrastructure" "${SCRIPT_DIR}/setup.sh" && \
+   grep -q "Hyperledger Explorer" "${SCRIPT_DIR}/setup.sh" && \
+   grep -q "Comprehensive Tests" "${SCRIPT_DIR}/setup.sh"; then
+    pass "Setup script includes all 10 deployment phases"
+else
+    fail "Setup script is missing some deployment phases"
+fi
+
+print_test "Setup script command-line options"
+if grep -q -- "--skip-prereq" "${SCRIPT_DIR}/setup.sh" && \
+   grep -q -- "--clean" "${SCRIPT_DIR}/setup.sh" && \
+   grep -q -- "--test-only" "${SCRIPT_DIR}/setup.sh" && \
+   grep -q -- "--help" "${SCRIPT_DIR}/setup.sh"; then
+    pass "Setup script supports all command-line options"
+else
+    fail "Setup script missing some command-line options"
+fi
+
+# ============================================================================
 # FINAL SUMMARY
 # ============================================================================
 

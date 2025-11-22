@@ -1,0 +1,116 @@
+{
+  "name": "coc-network",
+  "version": "1.0.0",
+  "client": {
+    "tlsEnable": true,
+    "adminCredential": {
+      "id": "exploreradmin",
+      "password": "exploreradminpw"
+    },
+    "enableAuthentication": false,
+    "organization": "LabOrgMSP",
+    "connection": {
+      "timeout": {
+        "peer": {
+          "endorser": "300"
+        },
+        "orderer": "300"
+      }
+    }
+  },
+  "channels": {
+    "hot-chain": {
+      "peers": {
+        "peer0.laborg.hot.coc.com": {}
+      },
+      "connection": {
+        "timeout": {
+          "peer": {
+            "endorser": "6000",
+            "eventHub": "6000",
+            "eventReg": "6000"
+          }
+        }
+      }
+    },
+    "cold-chain": {
+      "peers": {
+        "peer0.laborg.cold.coc.com": {},
+        "peer0.courtorg.cold.coc.com": {}
+      },
+      "connection": {
+        "timeout": {
+          "peer": {
+            "endorser": "6000",
+            "eventHub": "6000",
+            "eventReg": "6000"
+          }
+        }
+      }
+    }
+  },
+  "organizations": {
+    "LabOrgMSP": {
+      "mspid": "LabOrgMSP",
+      "fullpath": false,
+      "adminPrivateKey": {
+        "path": "/tmp/crypto/hot-blockchain/peerOrganizations/laborg.hot.coc.com/users/lab-admin@laborg.hot.coc.com/msp/keystore/priv_sk"
+      },
+      "signedCert": {
+        "path": "/tmp/crypto/hot-blockchain/peerOrganizations/laborg.hot.coc.com/users/lab-admin@laborg.hot.coc.com/msp/signcerts/cert.pem"
+      }
+    },
+    "CourtOrgMSP": {
+      "mspid": "CourtOrgMSP",
+      "fullpath": false,
+      "adminPrivateKey": {
+        "path": "/tmp/crypto/cold-blockchain/peerOrganizations/courtorg.cold.coc.com/users/court-admin@courtorg.cold.coc.com/msp/keystore/priv_sk"
+      },
+      "signedCert": {
+        "path": "/tmp/crypto/cold-blockchain/peerOrganizations/courtorg.cold.coc.com/users/court-admin@courtorg.cold.coc.com/msp/signcerts/cert.pem"
+      }
+    },
+    "OrdererOrgMSP": {
+      "mspid": "OrdererOrgMSP",
+      "fullpath": false,
+      "adminPrivateKey": {
+        "path": "/tmp/crypto/hot-blockchain/ordererOrganizations/ordererorg.hot.coc.com/users/orderer-admin@ordererorg.hot.coc.com/msp/keystore/priv_sk"
+      },
+      "signedCert": {
+        "path": "/tmp/crypto/hot-blockchain/ordererOrganizations/ordererorg.hot.coc.com/users/orderer-admin@ordererorg.hot.coc.com/msp/signcerts/cert.pem"
+      }
+    }
+  },
+  "peers": {
+    "peer0.laborg.hot.coc.com": {
+      "tlsCACerts": {
+        "path": "/tmp/crypto/hot-blockchain/peerOrganizations/laborg.hot.coc.com/tlsca/tlsca.laborg.hot.coc.com-cert.pem"
+      },
+      "url": "grpcs://peer0.laborg.hot.coc.com:7051",
+      "grpcOptions": {
+        "ssl-target-name-override": "peer0.laborg.hot.coc.com",
+        "grpc.keepalive_time_ms": 600000
+      }
+    },
+    "peer0.laborg.cold.coc.com": {
+      "tlsCACerts": {
+        "path": "/tmp/crypto/cold-blockchain/peerOrganizations/laborg.cold.coc.com/tlsca/tlsca.laborg.cold.coc.com-cert.pem"
+      },
+      "url": "grpcs://peer0.laborg.cold.coc.com:8051",
+      "grpcOptions": {
+        "ssl-target-name-override": "peer0.laborg.cold.coc.com",
+        "grpc.keepalive_time_ms": 600000
+      }
+    },
+    "peer0.courtorg.cold.coc.com": {
+      "tlsCACerts": {
+        "path": "/tmp/crypto/cold-blockchain/peerOrganizations/courtorg.cold.coc.com/tlsca/tlsca.courtorg.cold.coc.com-cert.pem"
+      },
+      "url": "grpcs://peer0.courtorg.cold.coc.com:9051",
+      "grpcOptions": {
+        "ssl-target-name-override": "peer0.courtorg.cold.coc.com",
+        "grpc.keepalive_time_ms": 600000
+      }
+    }
+  }
+}

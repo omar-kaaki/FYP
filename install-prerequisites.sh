@@ -477,6 +477,14 @@ print_success "IPFS Kubo v0.24.0 image pulled and tagged"
 docker pull nginx:1.25-alpine
 print_success "Nginx 1.25 Alpine image pulled"
 
+# PostgreSQL (for Hyperledger Explorer)
+docker pull postgres:14-alpine
+print_success "PostgreSQL 14 Alpine image pulled"
+
+# Hyperledger Explorer
+docker pull hyperledger/explorer:1.1.8
+print_success "Hyperledger Explorer 1.1.8 image pulled"
+
 # ============================================================================
 # STEP 8: Verification
 # ============================================================================

@@ -1,0 +1,87 @@
+version: '2.4'
+
+networks:
+  hot-network:
+    external: true
+  cold-network:
+    external: true
+  explorer-network:
+    name: explorer-network
+
+volumes:
+  pgdata:
+  walletstore:
+
+services:
+
+  # ====================
+  # PostgreSQL Database for Explorer
+  # ====================
+  postgres-explorer:
+    container_name: postgres-explorer.coc
+    image: postgres:14-alpine
+    environment:
+      - POSTGRES_USER=explorer
+      - POSTGRES_PASSWORD=explorerpw
+      - POSTGRES_DB=fabricexplorer
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - explorer-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U explorer -d fabricexplorer"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ====================
+  # Hyperledger Explorer
+  # ====================
+  explorer:
+    container_name: explorer.coc
+    image: hyperledger/explorer:1.1.8
+    environment:
+      - DATABASE_HOST=postgres-explorer
+      - DATABASE_PORT=5432
+      - DATABASE_DATABASE=fabricexplorer
+      - DATABASE_USERNAME=explorer
+      - DATABASE_PASSWD=explorerpw
+      - LOG_LEVEL_APP=info
+      - LOG_LEVEL_DB=info
+      - LOG_LEVEL_CONSOLE=info
+      - LOG_CONSOLE_STDOUT=true
+      - DISCOVERY_AS_LOCALHOST=false
+    volumes:
+      # Explorer configuration
+      - ./config.json:/opt/explorer/app/platform/fabric/config.json:ro
+      - ./connection-profile:/opt/explorer/app/platform/fabric/connection-profile:ro
+
+      # Crypto materials from HOT blockchain
+      - ../hot-blockchain/crypto-config:/tmp/crypto/hot-blockchain:ro
+
+      # Crypto materials from COLD blockchain
+      - ../cold-blockchain/crypto-config:/tmp/crypto/cold-blockchain:ro
+
+      # Wallet store (for Explorer's internal use)
+      - walletstore:/opt/explorer/wallet
+    ports:
+      - "8090:8080"  # Explorer UI
+    depends_on:
+      postgres-explorer:
+        condition: service_healthy
+    networks:
+      - explorer-network
+      - hot-network
+      - cold-network
+    restart: unless-stopped
+    command: sh -c "sleep 16 && node /opt/explorer/main.js && tail -f /dev/null"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/api/status || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s

@@ -1,0 +1,21 @@
+{
+  "network-configs": {
+    "coc-network": {
+      "name": "Chain of Custody Network",
+      "profile": "./connection-profile/coc-network.json"
+    }
+  },
+  "license": "Apache-2.0",
+  "postgreSQL": {
+    "host": "postgres-explorer",
+    "port": "5432",
+    "database": "fabricexplorer",
+    "username": "explorer",
+    "passwd": "explorerpw"
+  },
+  "sync": {
+    "type": "local",
+    "platform": "fabric",
+    "blocksSyncTime": "3"
+  }
+}
