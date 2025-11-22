@@ -455,8 +455,15 @@ if ! command_exists npm; then
 fi
 
 # Install TypeScript globally (command is 'tsc', not 'typescript')
+# Use sudo if system-installed npm, plain npm if nvm
+if [ "$SKIP_NVM" = "true" ]; then
+    NPM_INSTALL="sudo npm install -g"
+else
+    NPM_INSTALL="npm install -g"
+fi
+
 if ! command_exists tsc; then
-    npm install -g typescript
+    $NPM_INSTALL typescript
     print_success "TypeScript installed globally"
 else
     print_success "TypeScript is already installed ($(tsc --version))"
@@ -464,7 +471,7 @@ fi
 
 # Install ts-node globally
 if ! command_exists ts-node; then
-    npm install -g ts-node
+    $NPM_INSTALL ts-node
     print_success "ts-node installed globally"
 else
     print_success "ts-node is already installed"
