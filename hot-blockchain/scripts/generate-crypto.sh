@@ -220,14 +220,17 @@ fabric-ca-client enroll -u https://orderer-admin:ordereradminpw@localhost:7054 \
     --mspdir users/orderer-admin/msp
 
 # Copy admin cert to org MSP admincerts
+mkdir -p "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/msp/admincerts"
 cp "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/users/orderer-admin/msp/signcerts/"* \
    "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/msp/admincerts/orderer-admin-cert.pem"
 
 # Copy CA cert to org MSP
+mkdir -p "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/msp/cacerts"
 cp "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/ca/ca-cert.pem" \
    "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/msp/cacerts/ca.ordererorg.hot.coc.com-cert.pem"
 
 # Copy TLS CA cert to org MSP
+mkdir -p "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/msp/tlscacerts"
 cp "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/tlsca/tls-cert.pem" \
    "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/msp/tlscacerts/tlsca.ordererorg.hot.coc.com-cert.pem"
 
@@ -244,6 +247,11 @@ fabric-ca-client enroll -u https://orderer.hot.coc.com:ordererpw@localhost:7054 
 
 # Build orderer local MSP
 ORDERER_MSP="${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/orderers/orderer.hot.coc.com/msp"
+
+# Create MSP directories
+mkdir -p "${ORDERER_MSP}/cacerts"
+mkdir -p "${ORDERER_MSP}/tlscacerts"
+mkdir -p "${ORDERER_MSP}/admincerts"
 
 # Copy CA cert
 cp "${CRYPTO_DIR}/ordererOrganizations/ordererorg.hot.coc.com/ca/ca-cert.pem" \
@@ -291,14 +299,17 @@ fabric-ca-client enroll -u https://lab-admin:labadminpw@localhost:7055 \
     --mspdir users/lab-admin/msp
 
 # Copy admin cert to org MSP admincerts
+mkdir -p "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/msp/admincerts"
 cp "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/users/lab-admin/msp/signcerts/"* \
    "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/msp/admincerts/lab-admin-cert.pem"
 
 # Copy CA cert to org MSP
+mkdir -p "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/msp/cacerts"
 cp "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/ca/ca-cert.pem" \
    "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/msp/cacerts/ca.laborg.hot.coc.com-cert.pem"
 
 # Copy TLS CA cert to org MSP
+mkdir -p "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/msp/tlscacerts"
 cp "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/tlsca/tls-cert.pem" \
    "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/msp/tlscacerts/tlsca.laborg.hot.coc.com-cert.pem"
 
@@ -315,6 +326,11 @@ fabric-ca-client enroll -u https://peer0.laborg.hot.coc.com:peer0pw@localhost:70
 
 # Build peer local MSP
 PEER_MSP="${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/peers/peer0.laborg.hot.coc.com/msp"
+
+# Create peer MSP directories
+mkdir -p "${PEER_MSP}/cacerts"
+mkdir -p "${PEER_MSP}/tlscacerts"
+mkdir -p "${PEER_MSP}/admincerts"
 
 # Copy CA cert
 cp "${CRYPTO_DIR}/peerOrganizations/laborg.hot.coc.com/ca/ca-cert.pem" \

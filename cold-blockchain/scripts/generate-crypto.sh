@@ -263,6 +263,9 @@ fabric-ca-client enroll -u https://orderer-admin:ordereradminpw@localhost:7154 \
     --mspdir users/orderer-admin/msp
 
 # Copy admin cert to org MSP
+mkdir -p "${CRYPTO_DIR}/ordererOrganizations/ordererorg.cold.coc.com/msp/admincerts"
+mkdir -p "${CRYPTO_DIR}/ordererOrganizations/ordererorg.cold.coc.com/msp/cacerts"
+mkdir -p "${CRYPTO_DIR}/ordererOrganizations/ordererorg.cold.coc.com/msp/tlscacerts"
 cp "${CRYPTO_DIR}/ordererOrganizations/ordererorg.cold.coc.com/users/orderer-admin/msp/signcerts/"* \
    "${CRYPTO_DIR}/ordererOrganizations/ordererorg.cold.coc.com/msp/admincerts/orderer-admin-cert.pem"
 
@@ -281,6 +284,9 @@ fabric-ca-client enroll -u https://orderer.cold.coc.com:ordererpw@localhost:7154
 
 # Build orderer local MSP
 ORDERER_MSP="${CRYPTO_DIR}/ordererOrganizations/ordererorg.cold.coc.com/orderers/orderer.cold.coc.com/msp"
+mkdir -p "${ORDERER_MSP}/cacerts"
+mkdir -p "${ORDERER_MSP}/tlscacerts"
+mkdir -p "${ORDERER_MSP}/admincerts"
 cp "${CRYPTO_DIR}/ordererOrganizations/ordererorg.cold.coc.com/ca/ca-cert.pem" \
    "${ORDERER_MSP}/cacerts/ca.ordererorg.cold.coc.com-cert.pem"
 cp "${CRYPTO_DIR}/ordererOrganizations/ordererorg.cold.coc.com/tlsca/tls-cert.pem" \
@@ -319,6 +325,9 @@ fabric-ca-client enroll -u https://lab-admin:labadminpw@localhost:7155 \
     --mspdir users/lab-admin/msp
 
 # Copy to org MSP
+mkdir -p "${CRYPTO_DIR}/peerOrganizations/laborg.cold.coc.com/msp/admincerts"
+mkdir -p "${CRYPTO_DIR}/peerOrganizations/laborg.cold.coc.com/msp/cacerts"
+mkdir -p "${CRYPTO_DIR}/peerOrganizations/laborg.cold.coc.com/msp/tlscacerts"
 cp "${CRYPTO_DIR}/peerOrganizations/laborg.cold.coc.com/users/lab-admin/msp/signcerts/"* \
    "${CRYPTO_DIR}/peerOrganizations/laborg.cold.coc.com/msp/admincerts/lab-admin-cert.pem"
 cp "${CRYPTO_DIR}/peerOrganizations/laborg.cold.coc.com/ca/ca-cert.pem" \
@@ -335,6 +344,9 @@ fabric-ca-client enroll -u https://peer0.laborg.cold.coc.com:peer0pw@localhost:7
 
 # Build peer local MSP
 PEER_MSP="${CRYPTO_DIR}/peerOrganizations/laborg.cold.coc.com/peers/peer0.laborg.cold.coc.com/msp"
+mkdir -p "${PEER_MSP}/cacerts"
+mkdir -p "${PEER_MSP}/tlscacerts"
+mkdir -p "${PEER_MSP}/admincerts"
 cp "${CRYPTO_DIR}/peerOrganizations/laborg.cold.coc.com/ca/ca-cert.pem" \
    "${PEER_MSP}/cacerts/ca.laborg.cold.coc.com-cert.pem"
 cp "${CRYPTO_DIR}/peerOrganizations/laborg.cold.coc.com/tlsca/tls-cert.pem" \
@@ -380,6 +392,9 @@ fabric-ca-client enroll -u https://court-admin:courtadminpw@localhost:7156 \
     --mspdir users/court-admin/msp
 
 # Copy to org MSP
+mkdir -p "${CRYPTO_DIR}/peerOrganizations/courtorg.cold.coc.com/msp/admincerts"
+mkdir -p "${CRYPTO_DIR}/peerOrganizations/courtorg.cold.coc.com/msp/cacerts"
+mkdir -p "${CRYPTO_DIR}/peerOrganizations/courtorg.cold.coc.com/msp/tlscacerts"
 cp "${CRYPTO_DIR}/peerOrganizations/courtorg.cold.coc.com/users/court-admin/msp/signcerts/"* \
    "${CRYPTO_DIR}/peerOrganizations/courtorg.cold.coc.com/msp/admincerts/court-admin-cert.pem"
 cp "${CRYPTO_DIR}/peerOrganizations/courtorg.cold.coc.com/ca/ca-cert.pem" \
@@ -396,6 +411,9 @@ fabric-ca-client enroll -u https://peer0.courtorg.cold.coc.com:peer0pw@localhost
 
 # Build peer local MSP
 PEER_MSP="${CRYPTO_DIR}/peerOrganizations/courtorg.cold.coc.com/peers/peer0.courtorg.cold.coc.com/msp"
+mkdir -p "${PEER_MSP}/cacerts"
+mkdir -p "${PEER_MSP}/tlscacerts"
+mkdir -p "${PEER_MSP}/admincerts"
 cp "${CRYPTO_DIR}/peerOrganizations/courtorg.cold.coc.com/ca/ca-cert.pem" \
    "${PEER_MSP}/cacerts/ca.courtorg.cold.coc.com-cert.pem"
 cp "${CRYPTO_DIR}/peerOrganizations/courtorg.cold.coc.com/tlsca/tls-cert.pem" \
