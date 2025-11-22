@@ -28,8 +28,8 @@ services:
       - "17054:17054"
     command: sh -c 'fabric-ca-server start -b ca-admin:ca-adminpw -d'
     volumes:
-      - /home/user/FYPBcoc/hot-blockchain/crypto-config/ordererOrganizations/ordererorg.hot.coc.com/ca:/etc/hyperledger/fabric-ca-server
-      - /home/user/FYPBcoc/hot-blockchain/ca-config/ordererorg-ca/fabric-ca-server-config.yaml:/etc/hyperledger/fabric-ca-server/fabric-ca-server-config.yaml
+      - ./crypto-config/ordererOrganizations/ordererorg.hot.coc.com/ca:/etc/hyperledger/fabric-ca-server
+      - ./ca-config/ordererorg-ca/fabric-ca-server-config.yaml:/etc/hyperledger/fabric-ca-server/fabric-ca-server-config.yaml
     networks:
       - hot-network
 
@@ -48,8 +48,8 @@ services:
       - "18054:18054"
     command: sh -c 'fabric-ca-server start -b tls-ca-admin:tlscapw -d'
     volumes:
-      - /home/user/FYPBcoc/hot-blockchain/crypto-config/ordererOrganizations/ordererorg.hot.coc.com/tlsca:/etc/hyperledger/fabric-ca-server
-      - /home/user/FYPBcoc/hot-blockchain/ca-config/ordererorg-tlsca/fabric-ca-server-config.yaml:/etc/hyperledger/fabric-ca-server/fabric-ca-server-config.yaml
+      - ./crypto-config/ordererOrganizations/ordererorg.hot.coc.com/tlsca:/etc/hyperledger/fabric-ca-server
+      - ./ca-config/ordererorg-tlsca/fabric-ca-server-config.yaml:/etc/hyperledger/fabric-ca-server/fabric-ca-server-config.yaml
     networks:
       - hot-network
 
@@ -68,8 +68,8 @@ services:
       - "17055:17055"
     command: sh -c 'fabric-ca-server start -b ca-admin:ca-adminpw -d'
     volumes:
-      - /home/user/FYPBcoc/hot-blockchain/crypto-config/peerOrganizations/laborg.hot.coc.com/ca:/etc/hyperledger/fabric-ca-server
-      - /home/user/FYPBcoc/hot-blockchain/ca-config/laborg-ca/fabric-ca-server-config.yaml:/etc/hyperledger/fabric-ca-server/fabric-ca-server-config.yaml
+      - ./crypto-config/peerOrganizations/laborg.hot.coc.com/ca:/etc/hyperledger/fabric-ca-server
+      - ./ca-config/laborg-ca/fabric-ca-server-config.yaml:/etc/hyperledger/fabric-ca-server/fabric-ca-server-config.yaml
     networks:
       - hot-network
 
@@ -88,7 +88,7 @@ services:
       - "18055:18055"
     command: sh -c 'fabric-ca-server start -b tls-ca-admin:tlscapw -d'
     volumes:
-      - /home/user/FYPBcoc/hot-blockchain/crypto-config/peerOrganizations/laborg.hot.coc.com/tlsca:/etc/hyperledger/fabric-ca-server
-      - /home/user/FYPBcoc/hot-blockchain/ca-config/laborg-tlsca/fabric-ca-server-config.yaml:/etc/hyperledger/fabric-ca-server/fabric-ca-server-config.yaml
+      - ./crypto-config/peerOrganizations/laborg.hot.coc.com/tlsca:/etc/hyperledger/fabric-ca-server
+      - ./ca-config/laborg-tlsca/fabric-ca-server-config.yaml:/etc/hyperledger/fabric-ca-server/fabric-ca-server-config.yaml
     networks:
       - hot-network

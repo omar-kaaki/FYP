@@ -323,94 +323,117 @@ if command_exists node; then
     CURRENT_NODE_VERSION=$(node --version | sed 's/v//' | cut -d. -f1)
     if [[ "$CURRENT_NODE_VERSION" -ge "${NODE_VERSION}" ]]; then
         print_success "Node.js is already installed ($(node --version))"
+
+        # Check if npm is available
+        if command_exists npm; then
+            print_success "npm is already available ($(npm --version))"
+            # Skip nvm installation if Node.js and npm already work
+            SKIP_NVM=true
+        else
+            print_info "Node.js found but npm missing - will install via nvm"
+            SKIP_NVM=false
+        fi
     else
         echo "Current Node.js version: $(node --version)"
         echo "Upgrading to Node.js ${NODE_VERSION}.x..."
-
-        # Install nvm if not present
-        if [ ! -d "$HOME/.nvm" ]; then
-            curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/${NVM_VERSION}/install.sh | bash
-            export NVM_DIR="$HOME/.nvm"
-            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-            print_success "nvm installed"
-        fi
-
-        export NVM_DIR="$HOME/.nvm"
-        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-
-        nvm install ${NODE_VERSION}
-        nvm use ${NODE_VERSION}
-        nvm alias default ${NODE_VERSION}
-
-        print_success "Node.js ${NODE_VERSION}.x installed"
+        SKIP_NVM=false
     fi
 else
-    # Install nvm
+    print_info "Node.js not found - will install via nvm"
+    SKIP_NVM=false
+fi
+
+# Only install nvm if we need it
+if [ "$SKIP_NVM" != "true" ]; then
+    # Install nvm if not present
     if [ ! -d "$HOME/.nvm" ]; then
+        print_info "Installing nvm..."
         curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/${NVM_VERSION}/install.sh | bash
         export NVM_DIR="$HOME/.nvm"
         [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
         print_success "nvm installed"
+    else
+        print_info "nvm directory found, loading nvm..."
+        export NVM_DIR="$HOME/.nvm"
+        [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
     fi
 
-    # Install Node.js
-    export NVM_DIR="$HOME/.nvm"
-    [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
-
+    # Install/upgrade Node.js via nvm
+    print_info "Installing Node.js ${NODE_VERSION}.x via nvm..."
     nvm install ${NODE_VERSION}
     nvm use ${NODE_VERSION}
     nvm alias default ${NODE_VERSION}
-
-    print_success "Node.js ${NODE_VERSION}.x installed"
+    print_success "Node.js ${NODE_VERSION}.x installed via nvm"
 fi
 
 # Install global packages for development
-# Ensure nvm is loaded
-export NVM_DIR="$HOME/.nvm"
+# Try to ensure npm is available (either from nvm or system installation)
 
-# Check if nvm directory exists
-if [ ! -d "$NVM_DIR" ]; then
-    print_error "nvm directory not found at $NVM_DIR"
-    print_info "This might indicate nvm installation failed"
-    print_info "Please check the installation logs above"
-    exit 1
-fi
-
-# Source nvm script
-if [ -s "$NVM_DIR/nvm.sh" ]; then
-    \. "$NVM_DIR/nvm.sh"
+# If we skipped nvm, npm should already be available
+if [ "$SKIP_NVM" = "true" ]; then
+    print_info "Using system-installed Node.js and npm"
 else
-    print_error "nvm.sh not found"
-    exit 1
-fi
+    # nvm was installed/used, so load it
+    export NVM_DIR="$HOME/.nvm"
 
-# Add Node.js to PATH manually (find the installed version directory)
-if [ -d "$NVM_DIR/versions/node" ]; then
-    # Get the latest/current Node.js version directory
-    NODE_DIR=$(find "$NVM_DIR/versions/node" -maxdepth 1 -type d -name "v*" | sort -V | tail -n 1)
-    if [ -n "$NODE_DIR" ] && [ -d "$NODE_DIR/bin" ]; then
-        export PATH="$NODE_DIR/bin:$PATH"
-        print_info "Added Node.js to PATH: $NODE_DIR/bin"
+    # Check if nvm directory exists
+    if [ ! -d "$NVM_DIR" ]; then
+        print_error "nvm directory not found at $NVM_DIR"
+        print_info "This might indicate nvm installation failed"
+        print_info "Please check the installation logs above"
+        exit 1
+    fi
+
+    # Source nvm script
+    if [ -s "$NVM_DIR/nvm.sh" ]; then
+        \. "$NVM_DIR/nvm.sh"
+    else
+        print_error "nvm.sh not found"
+        exit 1
+    fi
+
+    # Add Node.js to PATH manually (find the installed version directory)
+    if [ -d "$NVM_DIR/versions/node" ]; then
+        # Get the latest/current Node.js version directory
+        NODE_DIR=$(find "$NVM_DIR/versions/node" -maxdepth 1 -type d -name "v*" | sort -V | tail -n 1)
+        if [ -n "$NODE_DIR" ] && [ -d "$NODE_DIR/bin" ]; then
+            export PATH="$NODE_DIR/bin:$PATH"
+            print_info "Added Node.js to PATH: $NODE_DIR/bin"
+        fi
     fi
 fi
 
-# Verify npm is available
+# Final verification - npm must be available regardless of installation method
 if ! command_exists npm; then
-    print_error "npm not found in PATH after loading nvm"
+    print_error "npm not found in PATH"
 
-    # Try to find npm manually
-    if [ -d "$NVM_DIR/versions/node" ]; then
-        NPM_PATH=$(find "$NVM_DIR/versions/node" -name npm -type f | head -n 1)
-        if [ -n "$NPM_PATH" ]; then
-            print_info "Found npm at: $NPM_PATH"
-            # Test if it works
-            if "$NPM_PATH" --version &>/dev/null; then
-                print_success "npm is installed and working"
-                # Add to PATH
-                NPM_BIN_DIR=$(dirname "$NPM_PATH")
-                export PATH="$NPM_BIN_DIR:$PATH"
-                print_info "Added npm to PATH: $NPM_BIN_DIR"
+    # Try to find npm manually (could be in nvm or system paths)
+    NPM_PATH=""
+
+    # Check nvm directories first
+    if [ -d "$HOME/.nvm/versions/node" ]; then
+        NPM_PATH=$(find "$HOME/.nvm/versions/node" -name npm -type f 2>/dev/null | head -n 1)
+    fi
+
+    # Check common system paths
+    if [ -z "$NPM_PATH" ]; then
+        for path in /usr/bin/npm /usr/local/bin/npm /opt/node/bin/npm; do
+            if [ -f "$path" ]; then
+                NPM_PATH="$path"
+                break
             fi
+        done
+    fi
+
+    if [ -n "$NPM_PATH" ]; then
+        print_info "Found npm at: $NPM_PATH"
+        # Test if it works
+        if "$NPM_PATH" --version &>/dev/null; then
+            print_success "npm is installed and working"
+            # Add to PATH
+            NPM_BIN_DIR=$(dirname "$NPM_PATH")
+            export PATH="$NPM_BIN_DIR:$PATH"
+            print_info "Added npm to PATH: $NPM_BIN_DIR"
         fi
     fi
 
@@ -425,11 +448,6 @@ if ! command_exists npm; then
         print_info "4. Verify npm: npm --version"
         print_info "5. If both work, the installation was successful!"
         print_info "6. Continue with: ./setup.sh"
-        echo ""
-        print_info "If npm doesn't work in new terminal, manually load nvm:"
-        print_info "  export NVM_DIR=\"\$HOME/.nvm\""
-        print_info "  [ -s \"\$NVM_DIR/nvm.sh\" ] && \\. \"\$NVM_DIR/nvm.sh\""
-        print_info "  npm --version"
         echo ""
         echo -e "${YELLOW}NOTE: This error might be a PATH issue in the current shell.${NC}"
         echo -e "${YELLOW}      Try opening a new terminal to verify npm works.${NC}"

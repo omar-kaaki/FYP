@@ -29,8 +29,8 @@ services:
       - "17154:17154"
     command: sh -c 'fabric-ca-server start -b ca-admin:ca-adminpw -d'
     volumes:
-      - /home/user/FYPBcoc/cold-blockchain/crypto-config/ordererOrganizations/ordererorg.cold.coc.com/ca:/etc/hyperledger/fabric-ca-server
-      - /home/user/FYPBcoc/cold-blockchain/ca-config/ordererorg-ca/fabric-ca-server-config.yaml:/etc/hyperledger/fabric-ca-server/fabric-ca-server-config.yaml
+      - ./crypto-config/ordererOrganizations/ordererorg.cold.coc.com/ca:/etc/hyperledger/fabric-ca-server
+      - ./ca-config/ordererorg-ca/fabric-ca-server-config.yaml:/etc/hyperledger/fabric-ca-server/fabric-ca-server-config.yaml
     networks:
       - cold-network
 
@@ -49,8 +49,8 @@ services:
       - "18154:18154"
     command: sh -c 'fabric-ca-server start -b tls-ca-admin:tlscapw -d'
     volumes:
-      - /home/user/FYPBcoc/cold-blockchain/crypto-config/ordererOrganizations/ordererorg.cold.coc.com/tlsca:/etc/hyperledger/fabric-ca-server
-      - /home/user/FYPBcoc/cold-blockchain/ca-config/ordererorg-tlsca/fabric-ca-server-config.yaml:/etc/hyperledger/fabric-ca-server/fabric-ca-server-config.yaml
+      - ./crypto-config/ordererOrganizations/ordererorg.cold.coc.com/tlsca:/etc/hyperledger/fabric-ca-server
+      - ./ca-config/ordererorg-tlsca/fabric-ca-server-config.yaml:/etc/hyperledger/fabric-ca-server/fabric-ca-server-config.yaml
     networks:
       - cold-network
 
@@ -69,8 +69,8 @@ services:
       - "17155:17155"
     command: sh -c 'fabric-ca-server start -b ca-admin:ca-adminpw -d'
     volumes:
-      - /home/user/FYPBcoc/cold-blockchain/crypto-config/peerOrganizations/laborg.cold.coc.com/ca:/etc/hyperledger/fabric-ca-server
-      - /home/user/FYPBcoc/cold-blockchain/ca-config/laborg-ca/fabric-ca-server-config.yaml:/etc/hyperledger/fabric-ca-server/fabric-ca-server-config.yaml
+      - ./crypto-config/peerOrganizations/laborg.cold.coc.com/ca:/etc/hyperledger/fabric-ca-server
+      - ./ca-config/laborg-ca/fabric-ca-server-config.yaml:/etc/hyperledger/fabric-ca-server/fabric-ca-server-config.yaml
     networks:
       - cold-network
 
@@ -89,8 +89,8 @@ services:
       - "18155:18155"
     command: sh -c 'fabric-ca-server start -b tls-ca-admin:tlscapw -d'
     volumes:
-      - /home/user/FYPBcoc/cold-blockchain/crypto-config/peerOrganizations/laborg.cold.coc.com/tlsca:/etc/hyperledger/fabric-ca-server
-      - /home/user/FYPBcoc/cold-blockchain/ca-config/laborg-tlsca/fabric-ca-server-config.yaml:/etc/hyperledger/fabric-ca-server/fabric-ca-server-config.yaml
+      - ./crypto-config/peerOrganizations/laborg.cold.coc.com/tlsca:/etc/hyperledger/fabric-ca-server
+      - ./ca-config/laborg-tlsca/fabric-ca-server-config.yaml:/etc/hyperledger/fabric-ca-server/fabric-ca-server-config.yaml
     networks:
       - cold-network
 
@@ -109,8 +109,8 @@ services:
       - "17156:17156"
     command: sh -c 'fabric-ca-server start -b ca-admin:ca-adminpw -d'
     volumes:
-      - /home/user/FYPBcoc/cold-blockchain/crypto-config/peerOrganizations/courtorg.cold.coc.com/ca:/etc/hyperledger/fabric-ca-server
-      - /home/user/FYPBcoc/cold-blockchain/ca-config/courtorg-ca/fabric-ca-server-config.yaml:/etc/hyperledger/fabric-ca-server/fabric-ca-server-config.yaml
+      - ./crypto-config/peerOrganizations/courtorg.cold.coc.com/ca:/etc/hyperledger/fabric-ca-server
+      - ./ca-config/courtorg-ca/fabric-ca-server-config.yaml:/etc/hyperledger/fabric-ca-server/fabric-ca-server-config.yaml
     networks:
       - cold-network
 
@@ -129,7 +129,7 @@ services:
       - "18156:18156"
     command: sh -c 'fabric-ca-server start -b tls-ca-admin:tlscapw -d'
     volumes:
-      - /home/user/FYPBcoc/cold-blockchain/crypto-config/peerOrganizations/courtorg.cold.coc.com/tlsca:/etc/hyperledger/fabric-ca-server
-      - /home/user/FYPBcoc/cold-blockchain/ca-config/courtorg-tlsca/fabric-ca-server-config.yaml:/etc/hyperledger/fabric-ca-server/fabric-ca-server-config.yaml
+      - ./crypto-config/peerOrganizations/courtorg.cold.coc.com/tlsca:/etc/hyperledger/fabric-ca-server
+      - ./ca-config/courtorg-tlsca/fabric-ca-server-config.yaml:/etc/hyperledger/fabric-ca-server/fabric-ca-server-config.yaml
     networks:
       - cold-network

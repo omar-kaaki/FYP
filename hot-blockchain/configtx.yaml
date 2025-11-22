@@ -24,7 +24,7 @@ Organizations:
   - &OrdererOrg
       Name: OrdererOrg
       ID: OrdererOrgMSP
-      MSPDir: /home/user/FYPBcoc/hot-blockchain/crypto-config/ordererOrganizations/ordererorg.hot.coc.com/msp
+      MSPDir: ./crypto-config/ordererOrganizations/ordererorg.hot.coc.com/msp
 
       Policies:
         Readers:
@@ -44,7 +44,7 @@ Organizations:
   - &LabOrg
       Name: LabOrg
       ID: LabOrgMSP
-      MSPDir: /home/user/FYPBcoc/hot-blockchain/crypto-config/peerOrganizations/laborg.hot.coc.com/msp
+      MSPDir: ./crypto-config/peerOrganizations/laborg.hot.coc.com/msp
 
       Policies:
         Readers:
@@ -192,8 +192,8 @@ Orderer: &OrdererDefaults
     Consenters:
       - Host: orderer.hot.coc.com
         Port: 7050
-        ClientTLSCert: /home/user/FYPBcoc/hot-blockchain/crypto-config/ordererOrganizations/ordererorg.hot.coc.com/orderers/orderer.hot.coc.com/tls/server.crt
-        ServerTLSCert: /home/user/FYPBcoc/hot-blockchain/crypto-config/ordererOrganizations/ordererorg.hot.coc.com/orderers/orderer.hot.coc.com/tls/server.crt
+        ClientTLSCert: ./crypto-config/ordererOrganizations/ordererorg.hot.coc.com/orderers/orderer.hot.coc.com/tls/server.crt
+        ServerTLSCert: ./crypto-config/ordererOrganizations/ordererorg.hot.coc.com/orderers/orderer.hot.coc.com/tls/server.crt
 
     # Options to be specified for all the etcdraft nodes. The values here
     # are the defaults for all new channels and can be modified on a

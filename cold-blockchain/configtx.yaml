@@ -24,7 +24,7 @@ Organizations:
   - &OrdererOrg
       Name: OrdererOrg
       ID: OrdererOrgMSP
-      MSPDir: /home/user/FYPBcoc/cold-blockchain/crypto-config/ordererOrganizations/ordererorg.cold.coc.com/msp
+      MSPDir: ./crypto-config/ordererOrganizations/ordererorg.cold.coc.com/msp
 
       Policies:
         Readers:
@@ -44,7 +44,7 @@ Organizations:
   - &LabOrg
       Name: LabOrg
       ID: LabOrgMSP
-      MSPDir: /home/user/FYPBcoc/cold-blockchain/crypto-config/peerOrganizations/laborg.cold.coc.com/msp
+      MSPDir: ./crypto-config/peerOrganizations/laborg.cold.coc.com/msp
 
       Policies:
         Readers:
@@ -68,7 +68,7 @@ Organizations:
   - &CourtOrg
       Name: CourtOrg
       ID: CourtOrgMSP
-      MSPDir: /home/user/FYPBcoc/cold-blockchain/crypto-config/peerOrganizations/courtorg.cold.coc.com/msp
+      MSPDir: ./crypto-config/peerOrganizations/courtorg.cold.coc.com/msp
 
       Policies:
         Readers:
@@ -216,8 +216,8 @@ Orderer: &OrdererDefaults
     Consenters:
       - Host: orderer.cold.coc.com
         Port: 7150
-        ClientTLSCert: /home/user/FYPBcoc/cold-blockchain/crypto-config/ordererOrganizations/ordererorg.cold.coc.com/orderers/orderer.cold.coc.com/tls/server.crt
-        ServerTLSCert: /home/user/FYPBcoc/cold-blockchain/crypto-config/ordererOrganizations/ordererorg.cold.coc.com/orderers/orderer.cold.coc.com/tls/server.crt
+        ClientTLSCert: ./crypto-config/ordererOrganizations/ordererorg.cold.coc.com/orderers/orderer.cold.coc.com/tls/server.crt
+        ServerTLSCert: ./crypto-config/ordererOrganizations/ordererorg.cold.coc.com/orderers/orderer.cold.coc.com/tls/server.crt
 
     # Options to be specified for all the etcdraft nodes. The values here
     # are the defaults for all new channels and can be modified on a
