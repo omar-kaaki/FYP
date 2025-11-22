@@ -1,0 +1,45 @@
+{
+  "name": "evidence-upload-service",
+  "version": "1.0.0",
+  "description": "Evidence upload microservice for Chain of Custody - IPFS and Fabric integration",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "ts-node src/index.ts",
+    "test": "jest"
+  },
+  "keywords": [
+    "blockchain",
+    "hyperledger-fabric",
+    "ipfs",
+    "chain-of-custody",
+    "forensics"
+  ],
+  "author": "CoC Team",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "@hyperledger/fabric-gateway": "^1.5.1",
+    "@hyperledger/fabric-protos": "^0.2.2",
+    "express": "^4.18.2",
+    "multer": "^1.4.5-lts.1",
+    "ipfs-http-client": "^60.0.1",
+    "winston": "^3.11.0",
+    "dotenv": "^16.3.1",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/express": "^4.17.21",
+    "@types/multer": "^1.4.11",
+    "@types/node": "^20.10.6",
+    "@types/uuid": "^9.0.7",
+    "typescript": "^5.3.3",
+    "ts-node": "^10.9.2",
+    "jest": "^29.7.0",
+    "@types/jest": "^29.5.11"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}

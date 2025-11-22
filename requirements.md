@@ -886,6 +886,455 @@ ls -lh hot-blockchain/hot_chaincode_1.0.tar.gz
 
 ---
 
+## 6. Network Deployment
+
+### 6.1 Docker Network Architecture
+
+The system uses separate Docker networks for isolation:
+
+- **hot-network**: HOT blockchain components
+- **cold-network**: COLD blockchain components
+- **ipfs-network**: IPFS and evidence upload service
+- Cross-network connectivity for evidence upload service to both blockchains
+
+### 6.2 Network Components
+
+#### HOT Blockchain Network (`docker-compose-network.yaml`)
+
+| Component | Container Name | Ports | Purpose |
+|-----------|---------------|-------|---------|
+| Orderer | orderer.hot.coc.com | 7050, 7053, 8443 | Transaction ordering |
+| Peer | peer0.laborg.hot.coc.com | 7051, 7052, 9443 | Ledger + chaincode |
+| CouchDB | couchdb.peer0.laborg.hot.coc.com | 5984 | State database |
+| CLI | cli.hot | N/A | Admin tool |
+
+**Features:**
+- mTLS enabled on orderer and peer
+- Fabric Gateway enabled on peer (for JumpServer)
+- Prometheus metrics enabled
+- TLS client authentication required
+
+#### COLD Blockchain Network (`docker-compose-network.yaml`)
+
+| Component | Container Name | Ports | Purpose |
+|-----------|---------------|-------|---------|
+| Orderer | orderer.cold.coc.com | 7150, 7153, 8543 | Transaction ordering |
+| Peer (LabOrg) | peer0.laborg.cold.coc.com | 8051, 8052, 9543 | Ledger + chaincode |
+| Peer (CourtOrg) | peer0.courtorg.cold.coc.com | 9051, 9052, 9643 | Ledger + chaincode |
+| CouchDB (LabOrg) | couchdb.peer0.laborg.cold.coc.com | 6984 | State database |
+| CouchDB (CourtOrg) | couchdb.peer0.courtorg.cold.coc.com | 7984 | State database |
+| CLI | cli.cold | N/A | Admin tool |
+
+**Features:**
+- mTLS enabled on all components
+- Dual-peer endorsement (LabOrg + CourtOrg)
+- Gateway enabled on LabOrg peer only
+- Separate operations endpoints for monitoring
+
+### 6.3 Starting the Networks
+
+**Prerequisites:**
+1. CA infrastructure running
+2. Crypto materials generated
+3. Channel artifacts created
+
+**Start HOT Blockchain:**
+```bash
+cd hot-blockchain
+./scripts/start-network.sh
+```
+
+**Start COLD Blockchain:**
+```bash
+cd cold-blockchain
+./scripts/start-network.sh
+```
+
+The scripts automatically:
+- Stop existing containers
+- Start network components
+- Wait for containers to be healthy
+- Test connectivity
+- Create channel (if not already created)
+- Display network status and endpoints
+
+### 6.4 Stopping the Networks
+
+```bash
+# Stop HOT blockchain
+cd hot-blockchain && ./scripts/stop-network.sh
+
+# Stop COLD blockchain
+cd cold-blockchain && ./scripts/stop-network.sh
+```
+
+You will be prompted to remove data volumes (ledger data).
+
+### 6.5 Network Health Checks
+
+**Check running containers:**
+```bash
+docker ps --format "table {{.Names}}\t{{.Status}}\t{{.Ports}}"
+```
+
+**Check peer health (Prometheus endpoint):**
+```bash
+# HOT peer
+curl http://localhost:9443/healthz
+
+# COLD LabOrg peer
+curl http://localhost:9543/healthz
+
+# COLD CourtOrg peer
+curl http://localhost:9643/healthz
+```
+
+**Check CouchDB:**
+```bash
+# HOT CouchDB
+curl http://admin:adminpw@localhost:5984/_up
+
+# COLD LabOrg CouchDB
+curl http://admin:adminpw@localhost:6984/_up
+
+# COLD CourtOrg CouchDB
+curl http://admin:adminpw@localhost:7984/_up
+```
+
+**View logs:**
+```bash
+# HOT peer
+docker logs -f peer0.laborg.hot.coc.com
+
+# COLD LabOrg peer
+docker logs -f peer0.laborg.cold.coc.com
+
+# COLD CourtOrg peer
+docker logs -f peer0.courtorg.cold.coc.com
+```
+
+---
+
+## 7. IPFS Integration and Evidence Upload
+
+### 7.1 IPFS Infrastructure
+
+The system uses IPFS (InterPlanetary File System) for decentralized storage of evidence files. Only metadata (CID, hash, description) is stored on-chain.
+
+#### IPFS Components (`docker-compose-ipfs.yaml`)
+
+| Component | Container Name | Ports | Purpose |
+|-----------|---------------|-------|---------|
+| IPFS Node | ipfs.coc | 4001, 5001, 8080 | Decentralized storage |
+| Nginx Proxy | ipfs-proxy.coc | 5443, 8443 | HTTPS reverse proxy |
+| Upload Service | evidence-upload.coc | 3000 | REST API for uploads |
+
+**IPFS Kubo:** Version 0.24.0
+**Storage:** Persistent volumes for IPFS data and staging
+**Network:** Connected to hot-network, cold-network, ipfs-network
+
+### 7.2 Evidence Upload Service
+
+A Node.js/TypeScript microservice that handles:
+1. File uploads (multipart/form-data)
+2. SHA256 hash computation
+3. IPFS upload (get CID)
+4. Fabric chaincode invocation (via Gateway SDK)
+5. Response to caller
+
+**Technology Stack:**
+- Node.js 20 LTS
+- TypeScript 5.3
+- Express 4.18 (REST API)
+- Multer 1.4 (file uploads)
+- @hyperledger/fabric-gateway 1.5 (blockchain integration)
+- ipfs-http-client 60.0 (IPFS integration)
+
+**Source Structure:**
+```
+evidence-upload-service/
+├── src/
+│   ├── index.ts                 # Main REST API server
+│   ├── config.ts                # Environment configuration
+│   ├── utils/
+│   │   ├── logger.ts            # Winston logger
+│   │   └── hash.ts              # SHA256 computation
+│   └── services/
+│       ├── ipfs.ts              # IPFS upload/retrieval
+│       └── fabric.ts            # Fabric Gateway integration
+├── package.json                 # Dependencies
+├── tsconfig.json                # TypeScript config
+├── Dockerfile                   # Container image
+└── .env.example                 # Environment template
+```
+
+### 7.3 Evidence Upload Workflow
+
+```
+┌─────────────┐
+│  JumpServer │  (or direct upload)
+│   (Client)  │
+└──────┬──────┘
+       │ POST /api/evidence/upload
+       │ (file + metadata)
+       ▼
+┌─────────────────────────┐
+│ Evidence Upload Service │
+└───┬─────────────────┬───┘
+    │                 │
+    │ 1. Compute      │ 3. Invoke chaincode
+    │    SHA256       │    via Gateway
+    │                 │
+    │ 2. Upload to    │
+    │    IPFS (CID)   │
+    ▼                 ▼
+┌────────┐      ┌──────────────┐
+│  IPFS  │      │   Fabric     │
+│  Node  │      │ Peer (LabOrg)│
+└────────┘      └──────────────┘
+```
+
+**Steps:**
+1. Client uploads file with metadata
+2. Service computes SHA256 hash of file
+3. Service uploads file to IPFS, receives CID
+4. Service invokes `AddEvidence` chaincode function:
+   - Gateway identity: lab-gw@LabOrgMSP
+   - Transient data: userId + role
+   - Arguments: evidenceId, investigationId, description, CID, SHA256, metadata
+5. Chaincode validates permissions (Casbin RBAC)
+6. Chaincode writes on-chain record
+7. Service returns response to client
+
+### 7.4 API Endpoints
+
+#### Upload Evidence
+
+**Endpoint:** `POST /api/evidence/upload`
+
+**Content-Type:** `multipart/form-data`
+
+**Parameters:**
+- `file` (required): Evidence file (max 500MB)
+- `investigationId` (required): Investigation ID
+- `description` (required): Evidence description
+- `userId` (required): User ID (format: `user:<username>`)
+- `userRole` (required): Blockchain role
+- `chain` (optional): Target chain (`hot` or `cold`, default: `hot`)
+- `metadata` (optional): Additional JSON metadata
+
+**Response:**
+```json
+{
+  "success": true,
+  "evidenceId": "uuid",
+  "cid": "bafybeigdyrzt...",
+  "sha256": "e3b0c44298fc...",
+  "txId": "fabric-tx-id",
+  "chain": "hot"
+}
+```
+
+#### Get Evidence Metadata
+
+**Endpoint:** `GET /api/evidence/:evidenceId?chain=hot`
+
+**Response:**
+```json
+{
+  "success": true,
+  "evidence": {
+    "evidenceId": "uuid",
+    "investigationId": "inv-id",
+    "description": "...",
+    "cid": "bafybeigdyrzt...",
+    "sha256": "e3b0c44298fc...",
+    "metadata": "{...}",
+    "recordedAt": "timestamp",
+    "recordedBy": "user:investigator1"
+  }
+}
+```
+
+#### Retrieve Evidence File
+
+**Endpoint:** `GET /api/evidence/:evidenceId/file?chain=hot&verify=true`
+
+**Response:** Binary file content with proper headers
+
+#### Health Check
+
+**Endpoint:** `GET /health`
+
+**Response:**
+```json
+{
+  "status": "healthy",
+  "service": "evidence-upload-service",
+  "version": "1.0.0",
+  "timestamp": "2025-11-22T10:30:00Z"
+}
+```
+
+### 7.5 Starting IPFS Infrastructure
+
+**Prerequisites:**
+1. Both blockchain networks running
+2. Chaincode deployed on both chains
+3. lab-gw user identity created
+
+**Start IPFS:**
+```bash
+cd ipfs-storage
+./start-ipfs.sh
+```
+
+The script:
+- Checks blockchain networks are running
+- Generates SSL certificates for Nginx
+- Starts IPFS node, proxy, and upload service
+- Tests connectivity
+- Displays endpoints and API documentation
+
+**Stop IPFS:**
+```bash
+cd ipfs-storage
+./stop-ipfs.sh
+```
+
+### 7.6 Testing Evidence Upload
+
+**Create test file:**
+```bash
+echo "Test evidence data" > test-evidence.txt
+```
+
+**Upload to HOT chain:**
+```bash
+curl -X POST http://localhost:3000/api/evidence/upload \
+  -F 'file=@test-evidence.txt' \
+  -F 'investigationId=inv-test-001' \
+  -F 'description=Test evidence file' \
+  -F 'userId=user:investigator1' \
+  -F 'userRole=BlockchainInvestigator' \
+  -F 'chain=hot'
+```
+
+**Retrieve metadata:**
+```bash
+curl http://localhost:3000/api/evidence/<evidenceId>?chain=hot
+```
+
+**Retrieve file:**
+```bash
+curl http://localhost:3000/api/evidence/<evidenceId>/file?chain=hot \
+  --output retrieved-evidence.txt
+```
+
+### 7.7 IPFS Security
+
+**HTTPS Reverse Proxy:**
+- IPFS API exposed via Nginx on HTTPS (port 5443)
+- Self-signed certificates generated automatically
+- For production: Replace with CA-signed certificates
+
+**mTLS (Optional):**
+Nginx configuration supports client certificate authentication:
+```nginx
+ssl_client_certificate /etc/nginx/ssl/ca.crt;
+ssl_verify_client optional;
+```
+
+**File Integrity:**
+- SHA256 hash computed before upload
+- Hash stored on blockchain (immutable)
+- Hash verified during retrieval
+- Tampered files detected automatically
+
+---
+
+## 8. JumpServer Integration
+
+### 8.1 Integration Overview
+
+JumpServer (external web application) integrates with the blockchain infrastructure to enable forensic investigators to upload evidence with immutable audit trails.
+
+**Integration Document:** See `INTEGRATION_JUMPSERVER.md` for complete details
+
+### 8.2 Authentication Flow
+
+1. **User Authentication:** JumpServer authenticates user
+2. **Role Mapping:** JumpServer maps user to blockchain role
+3. **API Call:** JumpServer calls Evidence Upload Service REST API
+4. **Gateway Identity:** Service uses lab-gw identity for Fabric
+5. **User Context:** Actual user passed via transient data
+6. **Chaincode Validation:** Chaincode validates permissions via Casbin
+
+### 8.3 Required Integration Points
+
+**Endpoint:** `http://evidence-upload.coc:3000` (or configured URL)
+
+**User Role Mapping:**
+
+| JumpServer Role | Blockchain Role | Hot Chain Access | Cold Chain Access |
+|----------------|-----------------|------------------|-------------------|
+| Administrator | BlockchainAdmin | Full CRUD | Full CRUD |
+| Investigator | BlockchainInvestigator | Full CRUD | Read-only |
+| Analyst | BlockchainAnalyst | Read-only | Read-only |
+| Court | BlockchainCourt | No access | Archive only |
+
+**Sample Integration Code (JavaScript):**
+```javascript
+const FormData = require('form-data');
+const axios = require('axios');
+
+async function uploadEvidence(file, metadata) {
+    const form = new FormData();
+    form.append('file', file);
+    form.append('investigationId', metadata.investigationId);
+    form.append('description', metadata.description);
+    form.append('userId', `user:${currentUser.username}`);
+    form.append('userRole', currentUser.blockchainRole);
+    form.append('chain', 'hot'); // or 'cold'
+
+    const response = await axios.post(
+        'http://evidence-upload.coc:3000/api/evidence/upload',
+        form,
+        { headers: form.getHeaders() }
+    );
+
+    return response.data; // { evidenceId, cid, sha256, txId }
+}
+```
+
+### 8.4 Security Considerations
+
+**Gateway Identity:**
+- Only lab-gw@LabOrgMSP can invoke chaincode
+- JumpServer never has blockchain credentials
+- Evidence Upload Service acts as trusted intermediary
+
+**Transient Data:**
+- User context passed via transient data (never on ledger)
+- Chaincode validates user permissions
+- Prevents impersonation attacks
+
+**TLS/mTLS:**
+- All Fabric connections use mTLS
+- IPFS API behind HTTPS proxy
+- Optional: Client certificates for JumpServer → Evidence Upload Service
+
+### 8.5 Troubleshooting
+
+See `INTEGRATION_JUMPSERVER.md` section "Troubleshooting" for:
+- IPFS connection issues
+- Fabric Gateway errors
+- Permission denied errors
+- Hash verification failures
+- Gateway identity validation errors
+
+---
+
 ## Notes
 
 - **Project Architecture**: Split into `hot-blockchain/` (active investigation) and `cold-blockchain/` (archival)

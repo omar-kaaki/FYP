@@ -1,0 +1,114 @@
+version: '2.4'
+
+networks:
+  cold-network:
+    external: true
+    name: cold-network
+  hot-network:
+    external: true
+    name: hot-network
+  ipfs-network:
+    name: ipfs-network
+
+volumes:
+  ipfs_data:
+  ipfs_staging:
+
+services:
+
+  # ====================
+  # IPFS Kubo Node
+  # ====================
+  ipfs:
+    container_name: ipfs.coc
+    image: ipfs/kubo:v0.24.0
+    environment:
+      - IPFS_PROFILE=server
+      - IPFS_PATH=/data/ipfs
+    volumes:
+      - ipfs_data:/data/ipfs
+      - ipfs_staging:/export
+    ports:
+      - "4001:4001"     # P2P swarm
+      - "5001:5001"     # API (internal only, proxied by nginx)
+      - "8080:8080"     # Gateway (read-only)
+    networks:
+      - ipfs-network
+      - cold-network
+      - hot-network
+    restart: unless-stopped
+
+  # ====================
+  # Nginx HTTPS Proxy for IPFS API
+  # ====================
+  ipfs-proxy:
+    container_name: ipfs-proxy.coc
+    image: nginx:1.25-alpine
+    ports:
+      - "5443:443"      # HTTPS API endpoint
+      - "8443:8443"     # HTTPS Gateway endpoint
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+    depends_on:
+      - ipfs
+    networks:
+      - ipfs-network
+      - cold-network
+      - hot-network
+    restart: unless-stopped
+
+  # ====================
+  # Evidence Upload Microservice
+  # ====================
+  evidence-upload:
+    container_name: evidence-upload.coc
+    build:
+      context: ./evidence-upload-service
+      dockerfile: Dockerfile
+    image: evidence-upload-service:1.0
+    environment:
+      # IPFS Configuration
+      - IPFS_API_URL=http://ipfs:5001
+
+      # Fabric Gateway Configuration (Hot Chain)
+      - FABRIC_HOT_GATEWAY_PEER=peer0.laborg.hot.coc.com:7051
+      - FABRIC_HOT_CHANNEL=hot-chain
+      - FABRIC_HOT_CHAINCODE=hot_chaincode
+      - FABRIC_HOT_MSP_ID=LabOrgMSP
+      - FABRIC_HOT_GATEWAY_IDENTITY=lab-gw
+
+      # Fabric Gateway Configuration (Cold Chain)
+      - FABRIC_COLD_GATEWAY_PEER=peer0.laborg.cold.coc.com:8051
+      - FABRIC_COLD_CHANNEL=cold-chain
+      - FABRIC_COLD_CHAINCODE=cold_chaincode
+      - FABRIC_COLD_MSP_ID=LabOrgMSP
+      - FABRIC_COLD_GATEWAY_IDENTITY=lab-gw
+
+      # TLS Configuration
+      - FABRIC_TLS_ENABLED=true
+
+      # Service Configuration
+      - SERVICE_PORT=3000
+      - LOG_LEVEL=info
+    volumes:
+      # Hot blockchain crypto materials
+      - ../hot-blockchain/crypto-config/peerOrganizations/laborg.hot.coc.com/peers/peer0.laborg.hot.coc.com/tls/ca.crt:/fabric/hot/tls/ca.crt:ro
+      - ../hot-blockchain/crypto-config/peerOrganizations/laborg.hot.coc.com/users/lab-gw@laborg.hot.coc.com/msp:/fabric/hot/gateway/msp:ro
+
+      # Cold blockchain crypto materials
+      - ../cold-blockchain/crypto-config/peerOrganizations/laborg.cold.coc.com/peers/peer0.laborg.cold.coc.com/tls/ca.crt:/fabric/cold/tls/ca.crt:ro
+      - ../cold-blockchain/crypto-config/peerOrganizations/laborg.cold.coc.com/users/lab-gw@laborg.cold.coc.com/msp:/fabric/cold/gateway/msp:ro
+
+      # Temporary upload storage
+      - ./uploads:/tmp/uploads
+    ports:
+      - "3000:3000"     # REST API endpoint
+    depends_on:
+      - ipfs
+      - ipfs-proxy
+    networks:
+      - ipfs-network
+      - cold-network
+      - hot-network
+    restart: unless-stopped

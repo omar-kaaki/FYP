@@ -751,6 +751,257 @@ if [[ -f "${SCRIPT_DIR}/coc_chaincode/rbac/gateway.go" ]]; then
 fi
 
 # ============================================================================
+# PHASE 11: Network Deployment Validation
+# ============================================================================
+
+print_section "PHASE 11: Network Deployment Validation"
+
+# Hot blockchain network deployment
+print_test "Hot blockchain docker-compose-network.yaml exists"
+if [[ -f "${SCRIPT_DIR}/hot-blockchain/docker-compose-network.yaml" ]]; then
+    pass "Found hot-blockchain/docker-compose-network.yaml"
+else
+    fail "Missing hot-blockchain/docker-compose-network.yaml"
+fi
+
+print_test "Hot blockchain network scripts exist"
+if [[ -f "${SCRIPT_DIR}/hot-blockchain/scripts/start-network.sh" ]] && \
+   [[ -f "${SCRIPT_DIR}/hot-blockchain/scripts/stop-network.sh" ]]; then
+    pass "Found hot blockchain network scripts"
+else
+    fail "Missing hot blockchain network scripts"
+fi
+
+# Cold blockchain network deployment
+print_test "Cold blockchain docker-compose-network.yaml exists"
+if [[ -f "${SCRIPT_DIR}/cold-blockchain/docker-compose-network.yaml" ]]; then
+    pass "Found cold-blockchain/docker-compose-network.yaml"
+else
+    fail "Missing cold-blockchain/docker-compose-network.yaml"
+fi
+
+print_test "Cold blockchain network scripts exist"
+if [[ -f "${SCRIPT_DIR}/cold-blockchain/scripts/start-network.sh" ]] && \
+   [[ -f "${SCRIPT_DIR}/cold-blockchain/scripts/stop-network.sh" ]]; then
+    pass "Found cold blockchain network scripts"
+else
+    fail "Missing cold blockchain network scripts"
+fi
+
+# Validate hot-blockchain docker-compose configuration
+print_test "Hot blockchain network configuration validation"
+if grep -q "orderer.hot.coc.com" "${SCRIPT_DIR}/hot-blockchain/docker-compose-network.yaml" && \
+   grep -q "peer0.laborg.hot.coc.com" "${SCRIPT_DIR}/hot-blockchain/docker-compose-network.yaml" && \
+   grep -q "couchdb.peer0.laborg.hot.coc.com" "${SCRIPT_DIR}/hot-blockchain/docker-compose-network.yaml" && \
+   grep -q "ORDERER_GENERAL_TLS_CLIENTAUTHREQUIRED=true" "${SCRIPT_DIR}/hot-blockchain/docker-compose-network.yaml" && \
+   grep -q "CORE_PEER_TLS_CLIENTAUTHREQUIRED=true" "${SCRIPT_DIR}/hot-blockchain/docker-compose-network.yaml" && \
+   grep -q "CORE_PEER_GATEWAY_ENABLED=true" "${SCRIPT_DIR}/hot-blockchain/docker-compose-network.yaml"; then
+    pass "Hot blockchain network configuration is valid (orderer, peer, CouchDB, mTLS, gateway)"
+else
+    fail "Hot blockchain network configuration is incomplete"
+fi
+
+# Validate cold-blockchain docker-compose configuration
+print_test "Cold blockchain network configuration validation"
+if grep -q "orderer.cold.coc.com" "${SCRIPT_DIR}/cold-blockchain/docker-compose-network.yaml" && \
+   grep -q "peer0.laborg.cold.coc.com" "${SCRIPT_DIR}/cold-blockchain/docker-compose-network.yaml" && \
+   grep -q "peer0.courtorg.cold.coc.com" "${SCRIPT_DIR}/cold-blockchain/docker-compose-network.yaml" && \
+   grep -q "couchdb.peer0.laborg.cold.coc.com" "${SCRIPT_DIR}/cold-blockchain/docker-compose-network.yaml" && \
+   grep -q "couchdb.peer0.courtorg.cold.coc.com" "${SCRIPT_DIR}/cold-blockchain/docker-compose-network.yaml" && \
+   grep -q "ORDERER_GENERAL_TLS_CLIENTAUTHREQUIRED=true" "${SCRIPT_DIR}/cold-blockchain/docker-compose-network.yaml" && \
+   grep -q "CORE_PEER_TLS_CLIENTAUTHREQUIRED=true" "${SCRIPT_DIR}/cold-blockchain/docker-compose-network.yaml"; then
+    pass "Cold blockchain network configuration is valid (orderer, 2 peers, 2 CouchDBs, mTLS)"
+else
+    fail "Cold blockchain network configuration is incomplete"
+fi
+
+# Validate port mappings
+print_test "Hot blockchain port mappings"
+if grep -q "7050:7050" "${SCRIPT_DIR}/hot-blockchain/docker-compose-network.yaml" && \
+   grep -q "7051:7051" "${SCRIPT_DIR}/hot-blockchain/docker-compose-network.yaml" && \
+   grep -q "5984:5984" "${SCRIPT_DIR}/hot-blockchain/docker-compose-network.yaml"; then
+    pass "Hot blockchain port mappings are correct"
+else
+    fail "Hot blockchain port mappings are incorrect"
+fi
+
+print_test "Cold blockchain port mappings"
+if grep -q "7150:7150" "${SCRIPT_DIR}/cold-blockchain/docker-compose-network.yaml" && \
+   grep -q "8051:8051" "${SCRIPT_DIR}/cold-blockchain/docker-compose-network.yaml" && \
+   grep -q "9051:9051" "${SCRIPT_DIR}/cold-blockchain/docker-compose-network.yaml" && \
+   grep -q "6984:5984" "${SCRIPT_DIR}/cold-blockchain/docker-compose-network.yaml" && \
+   grep -q "7984:5984" "${SCRIPT_DIR}/cold-blockchain/docker-compose-network.yaml"; then
+    pass "Cold blockchain port mappings are correct (no conflicts)"
+else
+    fail "Cold blockchain port mappings are incorrect"
+fi
+
+# ============================================================================
+# PHASE 12: IPFS Infrastructure Validation
+# ============================================================================
+
+print_section "PHASE 12: IPFS Infrastructure Validation"
+
+print_test "IPFS docker-compose configuration exists"
+if [[ -f "${SCRIPT_DIR}/ipfs-storage/docker-compose-ipfs.yaml" ]]; then
+    pass "Found ipfs-storage/docker-compose-ipfs.yaml"
+else
+    fail "Missing ipfs-storage/docker-compose-ipfs.yaml"
+fi
+
+print_test "IPFS startup/shutdown scripts exist"
+if [[ -f "${SCRIPT_DIR}/ipfs-storage/start-ipfs.sh" ]] && \
+   [[ -f "${SCRIPT_DIR}/ipfs-storage/stop-ipfs.sh" ]]; then
+    pass "Found IPFS management scripts"
+else
+    fail "Missing IPFS management scripts"
+fi
+
+print_test "Nginx reverse proxy configuration exists"
+if [[ -f "${SCRIPT_DIR}/ipfs-storage/nginx/nginx.conf" ]] && \
+   [[ -f "${SCRIPT_DIR}/ipfs-storage/nginx/generate-ssl.sh" ]]; then
+    pass "Found Nginx reverse proxy configuration"
+else
+    fail "Missing Nginx reverse proxy configuration"
+fi
+
+# Validate IPFS docker-compose configuration
+print_test "IPFS infrastructure configuration validation"
+if grep -q "ipfs.coc" "${SCRIPT_DIR}/ipfs-storage/docker-compose-ipfs.yaml" && \
+   grep -q "ipfs-proxy.coc" "${SCRIPT_DIR}/ipfs-storage/docker-compose-ipfs.yaml" && \
+   grep -q "evidence-upload.coc" "${SCRIPT_DIR}/ipfs-storage/docker-compose-ipfs.yaml" && \
+   grep -q "ipfs/kubo" "${SCRIPT_DIR}/ipfs-storage/docker-compose-ipfs.yaml"; then
+    pass "IPFS infrastructure configuration is valid"
+else
+    fail "IPFS infrastructure configuration is incomplete"
+fi
+
+# Validate evidence upload service
+print_test "Evidence upload service exists"
+if [[ -d "${SCRIPT_DIR}/ipfs-storage/evidence-upload-service" ]]; then
+    pass "Found evidence-upload-service directory"
+else
+    fail "Missing evidence-upload-service directory"
+fi
+
+print_test "Evidence upload service package.json exists"
+if [[ -f "${SCRIPT_DIR}/ipfs-storage/evidence-upload-service/package.json" ]]; then
+    pass "Found evidence-upload-service/package.json"
+else
+    fail "Missing evidence-upload-service/package.json"
+fi
+
+print_test "Evidence upload service source files exist"
+SRC_FILES=(
+    "src/index.ts"
+    "src/config.ts"
+    "src/utils/logger.ts"
+    "src/utils/hash.ts"
+    "src/services/ipfs.ts"
+    "src/services/fabric.ts"
+)
+MISSING_FILES=0
+for file in "${SRC_FILES[@]}"; do
+    if [[ ! -f "${SCRIPT_DIR}/ipfs-storage/evidence-upload-service/$file" ]]; then
+        MISSING_FILES=$((MISSING_FILES + 1))
+    fi
+done
+if [[ $MISSING_FILES -eq 0 ]]; then
+    pass "All evidence upload service source files exist (${#SRC_FILES[@]} files)"
+else
+    fail "Missing $MISSING_FILES evidence upload service source files"
+fi
+
+print_test "Evidence upload service Dockerfile exists"
+if [[ -f "${SCRIPT_DIR}/ipfs-storage/evidence-upload-service/Dockerfile" ]]; then
+    pass "Found evidence-upload-service/Dockerfile"
+else
+    fail "Missing evidence-upload-service/Dockerfile"
+fi
+
+# Validate package dependencies
+print_test "Evidence upload service dependencies validation"
+if grep -q "@hyperledger/fabric-gateway" "${SCRIPT_DIR}/ipfs-storage/evidence-upload-service/package.json" && \
+   grep -q "ipfs-http-client" "${SCRIPT_DIR}/ipfs-storage/evidence-upload-service/package.json" && \
+   grep -q "express" "${SCRIPT_DIR}/ipfs-storage/evidence-upload-service/package.json" && \
+   grep -q "multer" "${SCRIPT_DIR}/ipfs-storage/evidence-upload-service/package.json"; then
+    pass "Required dependencies are declared (Fabric Gateway, IPFS, Express, Multer)"
+else
+    fail "Missing required dependencies in package.json"
+fi
+
+# Validate service endpoints in docker-compose
+print_test "IPFS service endpoints validation"
+if grep -q "3000:3000" "${SCRIPT_DIR}/ipfs-storage/docker-compose-ipfs.yaml" && \
+   grep -q "5001:5001" "${SCRIPT_DIR}/ipfs-storage/docker-compose-ipfs.yaml" && \
+   grep -q "5443:443" "${SCRIPT_DIR}/ipfs-storage/docker-compose-ipfs.yaml"; then
+    pass "IPFS service endpoints are correctly configured"
+else
+    fail "IPFS service endpoint configuration is incorrect"
+fi
+
+# Validate network connectivity
+print_test "IPFS infrastructure network connectivity"
+if grep -q "cold-network" "${SCRIPT_DIR}/ipfs-storage/docker-compose-ipfs.yaml" && \
+   grep -q "hot-network" "${SCRIPT_DIR}/ipfs-storage/docker-compose-ipfs.yaml" && \
+   grep -q "ipfs-network" "${SCRIPT_DIR}/ipfs-storage/docker-compose-ipfs.yaml"; then
+    pass "IPFS infrastructure is configured to connect to both blockchain networks"
+else
+    fail "IPFS infrastructure network configuration is incomplete"
+fi
+
+# Validate volume mounts for Fabric crypto materials
+print_test "Evidence upload service Fabric crypto material mounts"
+if grep -q "hot-blockchain/crypto-config" "${SCRIPT_DIR}/ipfs-storage/docker-compose-ipfs.yaml" && \
+   grep -q "cold-blockchain/crypto-config" "${SCRIPT_DIR}/ipfs-storage/docker-compose-ipfs.yaml" && \
+   grep -q "lab-gw@laborg" "${SCRIPT_DIR}/ipfs-storage/docker-compose-ipfs.yaml"; then
+    pass "Fabric crypto materials are mounted correctly (hot + cold, lab-gw identity)"
+else
+    fail "Fabric crypto material mounts are incomplete"
+fi
+
+# ============================================================================
+# PHASE 13: Integration Documentation Validation
+# ============================================================================
+
+print_section "PHASE 13: Integration Documentation Validation"
+
+print_test "JumpServer integration documentation exists"
+if [[ -f "${SCRIPT_DIR}/INTEGRATION_JUMPSERVER.md" ]]; then
+    pass "Found INTEGRATION_JUMPSERVER.md"
+else
+    fail "Missing INTEGRATION_JUMPSERVER.md"
+fi
+
+print_test "Integration documentation completeness"
+if grep -q "Evidence Upload Workflow" "${SCRIPT_DIR}/INTEGRATION_JUMPSERVER.md" && \
+   grep -q "API Endpoints" "${SCRIPT_DIR}/INTEGRATION_JUMPSERVER.md" && \
+   grep -q "Authentication and Security" "${SCRIPT_DIR}/INTEGRATION_JUMPSERVER.md" && \
+   grep -q "Testing" "${SCRIPT_DIR}/INTEGRATION_JUMPSERVER.md" && \
+   grep -q "Troubleshooting" "${SCRIPT_DIR}/INTEGRATION_JUMPSERVER.md"; then
+    pass "Integration documentation is complete"
+else
+    fail "Integration documentation is incomplete"
+fi
+
+print_test "Integration documentation covers REST API"
+if grep -q "POST /api/evidence/upload" "${SCRIPT_DIR}/INTEGRATION_JUMPSERVER.md" && \
+   grep -q "GET /api/evidence/:evidenceId" "${SCRIPT_DIR}/INTEGRATION_JUMPSERVER.md" && \
+   grep -q "GET /api/evidence/:evidenceId/file" "${SCRIPT_DIR}/INTEGRATION_JUMPSERVER.md"; then
+    pass "Integration documentation covers all REST API endpoints"
+else
+    fail "Integration documentation is missing API endpoint details"
+fi
+
+print_test "Integration documentation includes curl examples"
+if grep -q "curl -X POST" "${SCRIPT_DIR}/INTEGRATION_JUMPSERVER.md" && \
+   grep -q "multipart/form-data" "${SCRIPT_DIR}/INTEGRATION_JUMPSERVER.md"; then
+    pass "Integration documentation includes curl examples"
+else
+    fail "Integration documentation is missing curl examples"
+fi
+
+# ============================================================================
 # FINAL SUMMARY
 # ============================================================================
 
