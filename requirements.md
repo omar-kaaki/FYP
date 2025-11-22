@@ -499,6 +499,393 @@ rm -rf .fabric-ca-client/
 
 ---
 
+## 5. Chaincode Development and Deployment
+
+### 5.1 Chaincode Overview
+
+The Chain of Custody system uses a single Go chaincode (`coc_chaincode`) deployed as:
+- **hot_chaincode** on `hot-chain` (Active Investigation)
+- **cold_chaincode** on `cold-chain` (Archival)
+
+**Architecture:**
+- Language: Go 1.21+
+- RBAC Framework: Casbin v2.97.0 with domain support
+- Gateway Identity: `lab-gw@LabOrgMSP` (JumpServer integration)
+- Access Control: On-chain role mapping + Casbin policy enforcement
+- Security: TLS, transient user context, admin NodeOU validation
+
+### 5.2 Chaincode Structure
+
+```
+coc_chaincode/
+├── access/                    # Casbin RBAC configuration
+│   ├── casbin_model.conf     # Domain-based RBAC model (hot/cold)
+│   └── casbin_policy.csv     # Permission policies for 4 roles
+├── rbac/                      # Gateway and user management
+│   ├── gateway.go            # Identity validation (MSP ID + CN)
+│   └── userroles.go          # On-chain user role mapping
+├── domain/                    # Business logic
+│   ├── investigation.go      # CRUD + archive/reopen operations
+│   ├── evidence.go           # CRUD + chain of custody tracking
+│   └── guidmap.go            # GUID↔Evidence mapping (cold-chain)
+├── utils/
+│   └── json.go               # JSON marshaling helpers
+├── main.go                    # Chaincode entry point with routing
+├── go.mod                     # Go module definition
+├── build.sh                   # Build and package script
+└── README.md                  # Comprehensive documentation
+```
+
+### 5.3 RBAC Roles and Permissions
+
+**Casbin Domain-Based Policies:**
+
+| Role | Hot Chain | Cold Chain |
+|------|-----------|------------|
+| **BlockchainInvestigator** | Full CRUD on investigations and evidence | Read-only access |
+| **BlockchainAuditor** | Read-only access to all data | Read-only access to all data |
+| **BlockchainCourt** | No access | View, archive, reopen, GUID management |
+| **SystemAdmin** | User role management | User role management |
+
+**Access Control Flow:**
+1. JumpServer connects with `lab-gw` gateway identity
+2. Transient map contains `userId` and `role` (privacy - not on ledger)
+3. Chaincode validates gateway identity (MSPID + CN)
+4. Extracts user context from transient
+5. Builds principal ID: `LabOrgMSP|lab-gw|user:<userId>`
+6. Validates user has claimed role in on-chain mapping
+7. Enforces Casbin policy: (role, domain, object, action)
+8. Executes business logic if permitted
+
+### 5.4 Data Models
+
+**Investigation** (Key: `INVESTIGATION:<id>`):
+```json
+{
+  "id": "INV-2025-0001",
+  "title": "Investigation title",
+  "description": "Detailed description",
+  "status": "open" | "archived",
+  "createdBy": "userId",
+  "createdAt": "RFC3339 timestamp",
+  "updatedAt": "RFC3339 timestamp",
+  "channel": "hot" | "cold"
+}
+```
+
+**Evidence** (Key: `EVIDENCE:<id>`):
+```json
+{
+  "id": "EVID-0001",
+  "investigationId": "INV-2025-0001",
+  "hash": "sha256:...",
+  "ipfsCid": "bafy...",
+  "createdBy": "userId",
+  "createdAt": "RFC3339 timestamp",
+  "channel": "hot" | "cold",
+  "meta": {
+    "type": "disk image",
+    "sizeBytes": 123456789,
+    "fileName": "evidence.img",
+    "notes": "Optional notes"
+  },
+  "chainOfCustody": [
+    {
+      "timestamp": "RFC3339",
+      "action": "collected",
+      "custodian": "userId",
+      "location": "Lab A",
+      "description": "Evidence collected from scene"
+    }
+  ]
+}
+```
+
+**GUID Mapping** (Key: `GUIDMAP:<guid>`) - Cold-chain only:
+```json
+{
+  "guid": "GUID-XYZ-123",
+  "internalEvidenceId": "EVID-0001",
+  "createdBy": "court-user-id",
+  "createdAt": "RFC3339 timestamp",
+  "description": "Court case reference"
+}
+```
+
+**User Role** (Key: `USERROLE:<principalId>`):
+```json
+{
+  "principalId": "LabOrgMSP|lab-gw|user:investigator1",
+  "roles": ["BlockchainInvestigator", "BlockchainAuditor"],
+  "updatedBy": "admin-id",
+  "updatedAt": "RFC3339 timestamp"
+}
+```
+
+### 5.5 Chaincode Functions
+
+**Admin Functions** (require admin NodeOU):
+- `SetUserRoles(principalID, rolesCsv)` - Assign roles to user
+- `GetUserRoles(principalID)` - Query user's roles
+- `ListUserRoles()` - List all user role mappings
+- `DeleteUserRole(principalID)` - Remove user role mapping
+
+**Investigation Functions** (require gateway + user context):
+- `CreateInvestigation(id, title, description)` - Create new investigation
+- `GetInvestigation(id)` - Retrieve investigation by ID
+- `UpdateInvestigation(id, title, description)` - Update investigation
+- `ListInvestigations()` - List all investigations
+- `ArchiveInvestigation(id)` - Archive investigation (cold-chain only)
+- `ReopenInvestigation(id)` - Reopen archived investigation (cold-chain only)
+
+**Evidence Functions** (require gateway + user context):
+- `AddEvidence(id, investigationId, hash, ipfsCid, metaJSON)` - Add evidence
+- `GetEvidence(id)` - Retrieve evidence by ID
+- `ListEvidence()` - List all evidence
+- `ListEvidenceByInvestigation(investigationId)` - Filter by investigation
+- `AddCustodyEvent(evidenceId, action, custodian, location, description)` - Add custody event
+- `VerifyEvidenceHash(evidenceId, hash)` - Verify hash integrity
+
+**GUID Mapping Functions** (require gateway + user context, cold-chain only):
+- `CreateGUIDMapping(guid, internalEvidenceId, description)` - Create mapping
+- `ResolveGUID(guid)` - Resolve GUID to evidence ID
+- `GetEvidenceByGUID(guid)` - Retrieve evidence by GUID
+- `ListGUIDMappings()` - List all GUID mappings
+
+### 5.6 Building the Chaincode
+
+```bash
+cd ~/FYPBcoc/coc_chaincode
+
+# Build and package chaincode
+./build.sh
+```
+
+**Build process:**
+1. Downloads Go dependencies
+2. Vendors dependencies (creates `vendor/` directory)
+3. Builds chaincode binary
+4. Creates `coc_chaincode.tar.gz` package
+
+**Build output:**
+- `coc_chaincode` - Binary (for testing)
+- `coc_chaincode.tar.gz` - Package for deployment
+- `vendor/` - Vendored dependencies
+
+### 5.7 Deploying Chaincode
+
+#### Deploy to Hot Blockchain
+
+```bash
+cd ~/FYPBcoc/hot-blockchain
+./scripts/deploy-chaincode.sh
+```
+
+**Deployment details:**
+- Chaincode name: `hot_chaincode`
+- Version: 1.0
+- Sequence: 1
+- Channel: `hot-chain`
+- Endorsement policy: `OR('LabOrgMSP.peer')`
+- Installed on: `peer0.laborg.hot.coc.com`
+
+**Deployment steps:**
+1. Builds chaincode package
+2. Packages for Fabric lifecycle
+3. Installs on LabOrg peer
+4. Approves for LabOrg
+5. Commits chaincode definition
+6. Initializes chaincode
+
+#### Deploy to Cold Blockchain
+
+```bash
+cd ~/FYPBcoc/cold-blockchain
+./scripts/deploy-chaincode.sh
+```
+
+**Deployment details:**
+- Chaincode name: `cold_chaincode`
+- Version: 1.0
+- Sequence: 1
+- Channel: `cold-chain`
+- Endorsement policy: `AND('LabOrgMSP.peer','CourtOrgMSP.peer')`
+- Installed on: `peer0.laborg.cold.coc.com`, `peer0.courtorg.cold.coc.com`
+
+**Deployment steps:**
+1. Builds chaincode package
+2. Packages for Fabric lifecycle
+3. Installs on both LabOrg and CourtOrg peers
+4. Approves for both organizations
+5. Commits chaincode definition (requires both endorsements)
+6. Initializes chaincode
+
+### 5.8 Testing Chaincode
+
+#### Set User Roles (Admin Function)
+
+```bash
+# Set environment for LabOrg admin
+export CORE_PEER_LOCALMSPID="LabOrgMSP"
+export CORE_PEER_TLS_ENABLED=true
+export CORE_PEER_ADDRESS="localhost:7051"
+export CORE_PEER_TLS_ROOTCERT_FILE=/home/user/FYPBcoc/hot-blockchain/crypto-config/peerOrganizations/laborg.hot.coc.com/peers/peer0.laborg.hot.coc.com/tls/ca.crt
+export CORE_PEER_MSPCONFIGPATH=/home/user/FYPBcoc/hot-blockchain/crypto-config/peerOrganizations/laborg.hot.coc.com/users/Admin@laborg.hot.coc.com/msp
+
+# Assign BlockchainInvestigator role to user
+peer chaincode invoke \
+  -o localhost:7050 \
+  --ordererTLSHostnameOverride orderer.hot.coc.com \
+  --tls \
+  --cafile /home/user/FYPBcoc/hot-blockchain/crypto-config/ordererOrganizations/ordererorg.hot.coc.com/tlsca/tlsca.ordererorg.hot.coc.com-cert.pem \
+  -C hot-chain \
+  -n hot_chaincode \
+  --peerAddresses localhost:7051 \
+  --tlsRootCertFiles /home/user/FYPBcoc/hot-blockchain/crypto-config/peerOrganizations/laborg.hot.coc.com/peers/peer0.laborg.hot.coc.com/tls/ca.crt \
+  -c '{"function":"SetUserRoles","Args":["LabOrgMSP|lab-gw|user:investigator1","BlockchainInvestigator"]}'
+
+# Query user roles
+peer chaincode query \
+  -C hot-chain \
+  -n hot_chaincode \
+  -c '{"function":"GetUserRoles","Args":["LabOrgMSP|lab-gw|user:investigator1"]}'
+```
+
+#### Create Investigation (Gateway Function with Transient)
+
+**Note:** In production, JumpServer will provide the transient map. For testing:
+
+```bash
+# Transient map values must be base64 encoded
+# userId: investigator1 -> aW52ZXN0aWdhdG9yMQ==
+# role: BlockchainInvestigator -> QmxvY2tjaGFpbkludmVzdGlnYXRvcg==
+
+peer chaincode invoke \
+  -o localhost:7050 \
+  --ordererTLSHostnameOverride orderer.hot.coc.com \
+  --tls \
+  --cafile /home/user/FYPBcoc/hot-blockchain/crypto-config/ordererOrganizations/ordererorg.hot.coc.com/tlsca/tlsca.ordererorg.hot.coc.com-cert.pem \
+  -C hot-chain \
+  -n hot_chaincode \
+  --peerAddresses localhost:7051 \
+  --tlsRootCertFiles /home/user/FYPBcoc/hot-blockchain/crypto-config/peerOrganizations/laborg.hot.coc.com/peers/peer0.laborg.hot.coc.com/tls/ca.crt \
+  --transient '{"userId":"aW52ZXN0aWdhdG9yMQ==","role":"QmxvY2tjaGFpbkludmVzdGlnYXRvcg=="}' \
+  -c '{"function":"CreateInvestigation","Args":["INV-2025-001","Test Investigation","Initial test investigation"]}'
+```
+
+#### Query Investigation
+
+```bash
+peer chaincode invoke \
+  -C hot-chain \
+  -n hot_chaincode \
+  --transient '{"userId":"aW52ZXN0aWdhdG9yMQ==","role":"QmxvY2tjaGFpbkludmVzdGlnYXRvcg=="}' \
+  -c '{"function":"GetInvestigation","Args":["INV-2025-001"]}'
+```
+
+### 5.9 Security Considerations
+
+**Gateway Enforcement:**
+- Only `lab-gw@LabOrgMSP` identity can invoke business functions
+- Chaincode validates MSP ID and CN on every invocation
+- Non-gateway identities are immediately rejected
+
+**User Context Privacy:**
+- User ID and role passed via transient map
+- Transient data not written to ledger
+- Only principal ID stored in role mapping (no sensitive data)
+
+**On-Chain Role Mapping:**
+- Provides audit trail of role assignments
+- Admin-only modification (NodeOU validation)
+- Principal ID format prevents impersonation
+
+**Casbin Policy Enforcement:**
+- Fine-grained permissions per function
+- Domain separation (hot vs cold)
+- Object-level access control
+
+**TLS Security:**
+- All peer-to-peer communication uses TLS
+- Certificate validation on all connections
+- Mutual TLS (mTLS) between components
+
+**Admin Functions:**
+- Require admin NodeOU in certificate
+- Separate from gateway path
+- LabOrg and CourtOrg admins supported
+
+### 5.10 Chaincode Upgrade Process
+
+When upgrading chaincode to a new version:
+
+```bash
+# 1. Update chaincode source code
+cd ~/FYPBcoc/coc_chaincode
+# ... make changes ...
+
+# 2. Rebuild
+./build.sh
+
+# 3. Update deployment scripts with new version and sequence
+# Edit hot-blockchain/scripts/deploy-chaincode.sh
+# Change: CHAINCODE_VERSION="1.1"
+# Change: CHAINCODE_SEQUENCE=2
+
+# 4. Redeploy
+cd ~/FYPBcoc/hot-blockchain
+./scripts/deploy-chaincode.sh
+
+# Repeat for cold-chain
+cd ~/FYPBcoc/cold-blockchain
+./scripts/deploy-chaincode.sh
+```
+
+**Important:** On cold-chain, both LabOrg and CourtOrg must approve the upgrade.
+
+### 5.11 Troubleshooting
+
+**Issue:** Chaincode build fails with missing dependencies
+
+**Fix:**
+```bash
+cd coc_chaincode
+go mod tidy
+go mod vendor
+./build.sh
+```
+
+**Issue:** Chaincode installation fails
+
+**Fix:**
+```bash
+# Check peer is running
+docker ps | grep peer
+
+# Check peer logs
+docker logs peer0.laborg.hot.coc.com
+
+# Verify package exists
+ls -lh hot-blockchain/hot_chaincode_1.0.tar.gz
+```
+
+**Issue:** Permission denied on chaincode invocation
+
+**Fix:**
+- Verify user role is set: `GetUserRoles`
+- Check transient map is base64 encoded correctly
+- Verify gateway identity is lab-gw
+- Check Casbin policy allows the action
+
+**Issue:** Endorsement policy not satisfied on cold-chain
+
+**Fix:**
+- Ensure both LabOrg and CourtOrg peers are running
+- Verify chaincode installed on both peers
+- Check both peer addresses in invocation
+
+---
+
 ## Notes
 
 - **Project Architecture**: Split into `hot-blockchain/` (active investigation) and `cold-blockchain/` (archival)

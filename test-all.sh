@@ -567,6 +567,190 @@ else
 fi
 
 # ============================================================================
+# PHASE 10: Chaincode Validation
+# ============================================================================
+
+print_section "PHASE 10: Chaincode Validation"
+
+print_test "Checking chaincode directory structure"
+
+if [[ -d "${SCRIPT_DIR}/coc_chaincode" ]]; then
+    pass "Chaincode directory exists"
+else
+    fail "Chaincode directory not found"
+fi
+
+chaincode_dirs=(
+    "coc_chaincode/access"
+    "coc_chaincode/rbac"
+    "coc_chaincode/domain"
+    "coc_chaincode/utils"
+)
+
+for dir in "${chaincode_dirs[@]}"; do
+    if [[ -d "${SCRIPT_DIR}/$dir" ]]; then
+        pass "Directory exists: $dir"
+    else
+        fail "Directory missing: $dir"
+    fi
+done
+
+print_test "Checking chaincode source files"
+
+chaincode_files=(
+    "coc_chaincode/main.go"
+    "coc_chaincode/go.mod"
+    "coc_chaincode/build.sh"
+    "coc_chaincode/README.md"
+    "coc_chaincode/access/casbin_model.conf"
+    "coc_chaincode/access/casbin_policy.csv"
+    "coc_chaincode/rbac/gateway.go"
+    "coc_chaincode/rbac/userroles.go"
+    "coc_chaincode/domain/investigation.go"
+    "coc_chaincode/domain/evidence.go"
+    "coc_chaincode/domain/guidmap.go"
+    "coc_chaincode/utils/json.go"
+)
+
+for file in "${chaincode_files[@]}"; do
+    if [[ -f "${SCRIPT_DIR}/$file" ]]; then
+        pass "Source file exists: $(basename $file)"
+    else
+        fail "Source file missing: $file"
+    fi
+done
+
+print_test "Checking chaincode deployment scripts"
+
+deploy_scripts=(
+    "hot-blockchain/scripts/deploy-chaincode.sh"
+    "cold-blockchain/scripts/deploy-chaincode.sh"
+)
+
+for script in "${deploy_scripts[@]}"; do
+    if [[ -f "${SCRIPT_DIR}/$script" ]]; then
+        if [[ -x "${SCRIPT_DIR}/$script" ]]; then
+            pass "Deployment script exists and is executable: $(basename $script)"
+        else
+            warn "Deployment script exists but not executable: $(basename $script)"
+        fi
+    else
+        fail "Deployment script missing: $script"
+    fi
+done
+
+print_test "Validating go.mod file"
+
+if [[ -f "${SCRIPT_DIR}/coc_chaincode/go.mod" ]]; then
+    if grep -q "github.com/casbin/casbin/v2" "${SCRIPT_DIR}/coc_chaincode/go.mod"; then
+        pass "Casbin dependency found in go.mod"
+    else
+        fail "Casbin dependency missing in go.mod"
+    fi
+
+    if grep -q "github.com/hyperledger/fabric-chaincode-go" "${SCRIPT_DIR}/coc_chaincode/go.mod"; then
+        pass "Fabric chaincode-go dependency found"
+    else
+        fail "Fabric chaincode-go dependency missing"
+    fi
+
+    if grep -q "github.com/hyperledger/fabric-protos-go" "${SCRIPT_DIR}/coc_chaincode/go.mod"; then
+        pass "Fabric protos-go dependency found"
+    else
+        fail "Fabric protos-go dependency missing"
+    fi
+fi
+
+print_test "Checking Casbin policy configuration"
+
+if [[ -f "${SCRIPT_DIR}/coc_chaincode/access/casbin_policy.csv" ]]; then
+    policy_lines=$(grep -c "^p," "${SCRIPT_DIR}/coc_chaincode/access/casbin_policy.csv" || echo "0")
+    if [[ $policy_lines -gt 0 ]]; then
+        pass "Casbin policy has $policy_lines permission rules"
+    else
+        fail "No permission rules found in Casbin policy"
+    fi
+
+    # Check for required roles
+    if grep -q "BlockchainInvestigator" "${SCRIPT_DIR}/coc_chaincode/access/casbin_policy.csv"; then
+        pass "BlockchainInvestigator role defined"
+    fi
+
+    if grep -q "BlockchainAuditor" "${SCRIPT_DIR}/coc_chaincode/access/casbin_policy.csv"; then
+        pass "BlockchainAuditor role defined"
+    fi
+
+    if grep -q "BlockchainCourt" "${SCRIPT_DIR}/coc_chaincode/access/casbin_policy.csv"; then
+        pass "BlockchainCourt role defined"
+    fi
+
+    if grep -q "SystemAdmin" "${SCRIPT_DIR}/coc_chaincode/access/casbin_policy.csv"; then
+        pass "SystemAdmin role defined"
+    fi
+fi
+
+print_test "Checking chaincode build script"
+
+if [[ -f "${SCRIPT_DIR}/coc_chaincode/build.sh" ]]; then
+    if [[ -x "${SCRIPT_DIR}/coc_chaincode/build.sh" ]]; then
+        pass "Build script is executable"
+    else
+        warn "Build script exists but not executable"
+    fi
+
+    if grep -q "go mod tidy" "${SCRIPT_DIR}/coc_chaincode/build.sh"; then
+        pass "Build script includes go mod tidy"
+    fi
+
+    if grep -q "go mod vendor" "${SCRIPT_DIR}/coc_chaincode/build.sh"; then
+        pass "Build script includes go mod vendor"
+    fi
+fi
+
+print_test "Checking chaincode function implementations"
+
+if [[ -f "${SCRIPT_DIR}/coc_chaincode/main.go" ]]; then
+    # Check for key functions
+    functions=(
+        "SetUserRoles"
+        "GetUserRoles"
+        "CreateInvestigation"
+        "AddEvidence"
+        "ArchiveInvestigation"
+        "CreateGUIDMapping"
+    )
+
+    for func in "${functions[@]}"; do
+        if grep -q "func.*${func}" "${SCRIPT_DIR}/coc_chaincode/main.go"; then
+            pass "Function implemented: ${func}"
+        else
+            # Check in domain files
+            if grep -q "func.*${func}" "${SCRIPT_DIR}/coc_chaincode/domain/"*.go 2>/dev/null; then
+                pass "Function implemented: ${func}"
+            else
+                warn "Function may be missing: ${func}"
+            fi
+        fi
+    done
+fi
+
+print_test "Checking gateway identity validation"
+
+if [[ -f "${SCRIPT_DIR}/coc_chaincode/rbac/gateway.go" ]]; then
+    if grep -q "TrustedGatewayMSPID.*LabOrgMSP" "${SCRIPT_DIR}/coc_chaincode/rbac/gateway.go"; then
+        pass "Gateway MSPID validation configured"
+    fi
+
+    if grep -q "TrustedGatewayCN.*lab-gw" "${SCRIPT_DIR}/coc_chaincode/rbac/gateway.go"; then
+        pass "Gateway CN validation configured"
+    fi
+
+    if grep -q "ValidateGatewayIdentity" "${SCRIPT_DIR}/coc_chaincode/rbac/gateway.go"; then
+        pass "Gateway identity validation function exists"
+    fi
+fi
+
+# ============================================================================
 # FINAL SUMMARY
 # ============================================================================
 
@@ -630,6 +814,11 @@ if [[ $TOTAL_FAILED -eq 0 ]] && [[ $HOT_PASSED -eq 1 ]] && [[ $COLD_PASSED -eq 1
     echo "  5. Start network and create channels:"
     echo "     cd hot-blockchain && ./scripts/create-channel.sh"
     echo "     cd cold-blockchain && ./scripts/create-channel.sh"
+    echo ""
+    echo "  6. Build and deploy chaincode:"
+    echo "     cd coc_chaincode && ./build.sh"
+    echo "     cd ../hot-blockchain && ./scripts/deploy-chaincode.sh"
+    echo "     cd ../cold-blockchain && ./scripts/deploy-chaincode.sh"
     echo ""
     exit 0
 else
